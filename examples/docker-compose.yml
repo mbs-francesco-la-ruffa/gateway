@@ -8,7 +8,7 @@
 #   curl -k https://app.localhost/
 services:
   gateway:
-    image: ghcr.io/mbs-francesco-la-ruffa/gateway:1.0.0
+    image: ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0
     restart: unless-stopped
     ports:
       - "${GATEWAY_HTTP_PORT:-80}:80"

@@ -239,7 +239,11 @@ if page bare; then
     "texts": ["Stiamo facendo un intervento di manutenzione.", "Riprova", "Errore 503"],
     "absent": ["Ritorno previsto", "Ti serve aiuto?"],
     "hrefs": [""], "img": null, "until": null, "contrast": true}'
-  check "  the default accent" body_has '--accent: #2b5a87;'
+  check "  the frontend's neutral theme: its primary, background, radius and font" page_is '{
+    "tokens": {"color-primary": ["#504ec6", "#f8fafc"], "color-background": ["#f3f6f9", "#020817"],
+      "color-foreground": ["#020817", "#f8fafc"], "color-primary-foreground": ["#ffffff", "#020817"]},
+    "radius": "0.5rem", "font": "-apple-system"}'
+  check "  the status is a caution badge" body_has 'class="badge badge-caution status"'
   check "  the JSON has the default message" is "$(jq -r .message "$TMP/j")" "Servizio in manutenzione, torna disponibile a breve."
 fi
 
@@ -263,7 +267,7 @@ if page full -e MAINTENANCE_TITLE='Aggiornamento del portale' \
     "hrefs": ["", "mailto:assistenza@example.it", "tel:+390612345678", "https://stato.example.it/?da=manutenzione&lingua=it"],
     "img": "https://cdn.example.it/logo.svg", "until": "'"$YEAR"'-12-31T18:05", "contrast": true}'
   check "  the message keeps its paragraphs and line breaks" body_has '<p>Stiamo installando la nuova versione.<br>I dati sono al sicuro.</p>'
-  check "  the colour, lower case" body_has '--accent: #0b6e4f;'
+  check "  the colour, lower case, primary in both themes" page_is '{"tokens": {"color-primary": ["#0b6e4f", "#0b6e4f"]}}'
   check "  the logo's alt is empty, the name beside it says whose it is" body_has 'alt=""'
   check "  the JSON carries the message and the expected time" is "$(jq -c . "$TMP/j")" \
     "$(jq -nc --arg m "$(printf 'Stiamo installando la nuova versione.\nI dati sono al sicuro.\n\n  Grazie per la pazienza.  ')" --arg u "$YEAR-12-31T18:05" '{message: $m, until: $u}')"
@@ -309,6 +313,33 @@ if page blank -e MAINTENANCE_MESSAGE=$'  \n\n ' -e MAINTENANCE_TITLE=' ' -e MAIN
   check "  in the JSON too" is "$(jq -r .message "$TMP/j")" "Servizio in manutenzione, torna disponibile a breve."
 fi
 
+echo "${BOLD}the look of a project's own frontend${OFF}"
+if page theme-pa -e MAINTENANCE_THEME=pa; then
+  check "MAINTENANCE_THEME=pa: the PA brand's primary, ink, heading and radius, dark as the frontend's" page_is '{
+    "tokens": {"color-primary": ["#0066cc", "#f8fafc"], "color-foreground": ["#1a1a1a", "#f8fafc"],
+      "color-heading": ["#05263d", "#f8fafc"], "color-caution": ["#995c00", "#f5c75c"]},
+    "radius": "0.25rem", "contrast": true}'
+fi
+if page own -e MAINTENANCE_COLOR='#0B6E4F' -e MAINTENANCE_COLOR_DARK='#6ee7b7' -e MAINTENANCE_BACKGROUND='#fffbea' \
+  -e MAINTENANCE_TEXT='#3b2f00' -e MAINTENANCE_BACKGROUND_DARK='#14100a' -e MAINTENANCE_TEXT_DARK='#fdf6e3' \
+  -e MAINTENANCE_RADIUS=16px -e MAINTENANCE_FONT=serif -e MAINTENANCE_CONTACT_EMAIL=a@example.it -e MAINTENANCE_UNTIL=18:00; then
+  check "every token of its own in place, the rest mixed from them, contrast AA" page_is '{
+    "tokens": {"color-primary": ["#0b6e4f", "#6ee7b7"], "color-background": ["#fffbea", "#14100a"],
+      "color-foreground": ["#3b2f00", "#fdf6e3"], "color-heading": ["#3b2f00", "#fdf6e3"], "color-card": ["#fffbea", "#14100a"],
+      "color-ring": ["#3b2f00", "#fdf6e3"], "color-primary-foreground": ["#ffffff", "#020817"]},
+    "radius": "16px", "font": "ui-serif", "contrast": true}'
+fi
+if page radius-rem -e MAINTENANCE_RADIUS=0.125rem -e MAINTENANCE_FONT=mono; then
+  check "a radius in rem, the monospaced font" page_is '{"radius": "0.125rem", "font": "ui-monospace"}'
+fi
+for pair in '#ffffff #3a3a3a' '#777777 #000000' '#1b1b1b #e0e0e0' '#ffff00 #222222'; do
+  bg=${pair% *} ink=${pair#* }
+  if page "own-${bg#\#}-${ink#\#}" -e MAINTENANCE_BACKGROUND="$bg" -e MAINTENANCE_TEXT="$ink" -e MAINTENANCE_BACKGROUND_DARK="$ink" \
+    -e MAINTENANCE_TEXT_DARK="$bg" -e MAINTENANCE_COLOR="$bg" -e MAINTENANCE_CONTACT_EMAIL=a@example.it; then
+    check "background $bg, text $ink (the other way round in dark), the primary the background itself: every pair AA" page_is '{"contrast": true}'
+  fi
+done
+
 echo "${BOLD}accents that are hard to read on${OFF}"
 for colour in '#ffff00' '#777777' '#000000' '#ffffff' '#0000ff' '#e11d48' '#fc0'; do
   if page "colour-${colour#\#}" -e MAINTENANCE_COLOR="$colour" -e MAINTENANCE_CONTACT_EMAIL=a@example.it; then
@@ -323,6 +354,8 @@ if start_gateway -e ROUTES="$ROUTES_AB" -e MAINTENANCE_UNTIL='18:00'; then
   check "b.test: 503 with the page, no bare 502" is "$CODE/$(grep -ci '^x-gateway: maintenance' "$TMP/h")" "503/1"
   check "  saying the service is unreachable, not under maintenance" page_is '{"status": "Servizio non raggiungibile",
     "texts": ["In questo momento il servizio non risponde."], "absent": ["Manutenzione in corso"], "until": "18:00"}'
+  check "  in a negative badge" body_has 'class="badge badge-negative status"'
+  cp "$TMP/b" "$TMP/pages/unreachable.html"
   req b.test "$BASE/api/x"
   check "b.test/api/x: 503 in JSON" is "$CODE/$(grep -ci '^content-type: application/json' "$TMP/h")" "503/1"
   req a.test "$BASE/x"
@@ -475,6 +508,19 @@ expect_refusal "a colour by name" "MAINTENANCE_COLOR is" "${OK[@]}" -e MAINTENAN
 expect_refusal "a colour of five digits" "MAINTENANCE_COLOR is" "${OK[@]}" -e MAINTENANCE_COLOR='#12345'
 expect_refusal "a colour that closes the CSS" "MAINTENANCE_COLOR is" "${OK[@]}" -e MAINTENANCE_COLOR='#fff;}body{display:none'
 expect_refusal "a colour with a second line" "MAINTENANCE_COLOR is" "${OK[@]}" -e MAINTENANCE_COLOR=$'#ffffff\n#000000'
+expect_refusal "a dark colour by name" "MAINTENANCE_COLOR_DARK is" "${OK[@]}" -e MAINTENANCE_COLOR_DARK='white'
+expect_refusal "a background that closes the CSS" "MAINTENANCE_BACKGROUND is" "${OK[@]}" -e MAINTENANCE_BACKGROUND='#fff;}*{display:none}'
+expect_refusal "a dark background of four digits" "MAINTENANCE_BACKGROUND_DARK is" "${OK[@]}" -e MAINTENANCE_BACKGROUND_DARK='#1234'
+expect_refusal "a text colour in rgb()" "MAINTENANCE_TEXT is" "${OK[@]}" -e MAINTENANCE_TEXT='rgb(0,0,0)'
+expect_refusal "a dark text colour with a second line" "MAINTENANCE_TEXT_DARK is" "${OK[@]}" -e MAINTENANCE_TEXT_DARK=$'#ffffff\n#000000'
+expect_refusal "a light text that does not reach 4.5:1" "light theme: text #888888 on background #f3f6f9 is 3.27:1" "${OK[@]}" -e MAINTENANCE_TEXT='#888'
+expect_refusal "a dark background too close to the theme's text" "dark theme: text #f8fafc on background #cccccc" "${OK[@]}" -e MAINTENANCE_BACKGROUND_DARK='#cccccc'
+expect_refusal "a theme the frontend does not have" "MAINTENANCE_THEME is" "${OK[@]}" -e MAINTENANCE_THEME=bootstrap
+expect_refusal "a radius of 33 px" "MAINTENANCE_RADIUS is" "${OK[@]}" -e MAINTENANCE_RADIUS=33px
+expect_refusal "a radius of 2.5 rem" "MAINTENANCE_RADIUS is" "${OK[@]}" -e MAINTENANCE_RADIUS=2.5rem
+expect_refusal "a radius with no unit" "MAINTENANCE_RADIUS is" "${OK[@]}" -e MAINTENANCE_RADIUS=8
+expect_refusal "a radius that closes the CSS" "MAINTENANCE_RADIUS is" "${OK[@]}" -e MAINTENANCE_RADIUS='8px;}*{display:none}'
+expect_refusal "a font by name" "MAINTENANCE_FONT is" "${OK[@]}" -e MAINTENANCE_FONT='Comic Sans MS'
 expect_refusal "an email without a domain" "MAINTENANCE_CONTACT_EMAIL is" "${OK[@]}" -e MAINTENANCE_CONTACT_EMAIL='assistenza@example'
 expect_refusal "two emails" "MAINTENANCE_CONTACT_EMAIL is" "${OK[@]}" -e MAINTENANCE_CONTACT_EMAIL='a@example.it, b@example.it'
 expect_refusal "a phone with letters" "MAINTENANCE_CONTACT_PHONE is" "${OK[@]}" -e MAINTENANCE_CONTACT_PHONE='06 CHIAMA'
@@ -494,6 +540,8 @@ expect_refusal "a relative MAINTENANCE_FILE" "MAINTENANCE_FILE is" "${OK[@]}" -e
 expect_refusal "a MAINTENANCE_FILE with a space" "MAINTENANCE_FILE is" "${OK[@]}" -e MAINTENANCE_FILE='/data/x y'
 expect_refusal "a wrong page value, even with MAINTENANCE_HTML set" "MAINTENANCE_COLOR is" "${OK[@]}" \
   -e MAINTENANCE_HTML='<p>ok</p>' -e MAINTENANCE_COLOR='blue'
+expect_refusal "a contrast too low, even with MAINTENANCE_HTML set" "AA asks 4.5:1" "${OK[@]}" \
+  -e MAINTENANCE_HTML='<p>ok</p>' -e MAINTENANCE_BACKGROUND='#000000'
 
 if [ "${CHECK_BROWSER:-1}" != 0 ]; then
   echo "${BOLD}the page in a browser${OFF} (Chromium $PLAYWRIGHT, in docker)"

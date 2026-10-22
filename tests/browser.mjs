@@ -148,10 +148,12 @@ for (const name of ['bare', 'full', 'evil', 'english']) {
   const colours = {}
   for (const scheme of ['light', 'dark']) {
     const { context, tab } = await open(page('bare'), { scheme })
-    colours[scheme] = await tab.evaluate(() => getComputedStyle(document.querySelector('.card')).backgroundColor)
+    colours[scheme] = await tab.evaluate(() => [document.body, document.getElementById('gw-retry')].map((el) => getComputedStyle(el).backgroundColor).join(' / '))
     await context.close()
   }
-  check('the card follows the system theme', colours.light === 'rgb(255, 255, 255)' && colours.dark === 'rgb(24, 27, 31)', JSON.stringify(colours))
+  // The frontend's neutral theme: background and primary, light then dark.
+  check('the page follows the system theme, in the frontend\'s colours',
+    colours.light === 'rgb(243, 246, 249) / rgb(80, 78, 198)' && colours.dark === 'rgb(2, 8, 23) / rgb(248, 250, 252)', JSON.stringify(colours))
 }
 
 // --- Screenshots, for a person to look at.
@@ -163,6 +165,11 @@ if (process.env.SHOTS) {
     ['bare', 'phone', 390, 844],
     ['english', 'desktop', 1280, 900],
     ['colour-ffff00', 'desktop', 1280, 900],
+    ['theme-pa', 'desktop', 1280, 900],
+    ['theme-pa', 'phone', 390, 844],
+    ['own', 'desktop', 1280, 900],
+    ['own', 'phone', 390, 844],
+    ['unreachable', 'desktop', 1280, 900],
   ]
   for (const [name, device, width, height] of shots) {
     for (const scheme of ['light', 'dark']) {

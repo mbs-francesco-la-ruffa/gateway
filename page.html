@@ -7,103 +7,154 @@
 <meta name="robots" content="noindex">
 <title>@@DOC_TITLE@@</title>
 <style>
-/* The maintenance page (README.md, «La pagina»). gateway.sh fills every placeholder at start, escaped.
-   Light and dark follow the visitor's system; tests/page_check.py measures every pair of colours below
-   that carries text or marks a control, for any accent. */
+/* The maintenance page (README.md, «La pagina»), drawn as a screen of the template's frontend: its
+   NotFoundView and AuthLayout (a centred column on the page background, no card), its Button and Badge.
+   gateway.sh fills every placeholder at start, escaped or picked from a fixed list.
+
+   THE TOKENS. Everything below the two blocks reads these and nothing else: no colour, size, radius or
+   font is written anywhere else in this file. The colours carry the frontend's names
+   (packages/shared/src/styles/themes/*.css in the template) and come from the theme gateway.sh picked
+   (MAINTENANCE_THEME, the same choice as the frontend's VITE_BRAND) with the page's colour variables
+   on top. tests/page_check.py measures every pair that carries text or marks a control, in both themes. */
 :root {
   color-scheme: light dark;
-  --bg: #f3f2ee;
-  --surface: #ffffff;
-  --soft: #f3f2ee;
-  --ink: #17191d;
-  --muted: #545961;
-  --line: #e2dfd7;
-  --control: #7b808a;
-  --focus: #17191d;
-  --shadow: 0 1px 2px rgb(23 25 29 / 0.05), 0 18px 48px -20px rgb(23 25 29 / 0.22);
-  --accent: @@ACCENT@@;
-  --on-accent: @@ON_ACCENT@@;
-  --accent-edge: @@ACCENT_EDGE_LIGHT@@;
+  --color-background: @@L_BACKGROUND@@;
+  --color-foreground: @@L_FOREGROUND@@;
+  --color-heading: @@L_HEADING@@;
+  --color-card: @@L_CARD@@;
+  --color-accent: @@L_ACCENT@@;
+  --color-muted-foreground: @@L_MUTED_FOREGROUND@@;
+  --color-border: @@L_BORDER@@;
+  --color-control: @@L_CONTROL@@;
+  --color-ring: @@L_RING@@;
+  --color-primary: @@L_PRIMARY@@;
+  --color-primary-foreground: @@L_PRIMARY_FOREGROUND@@;
+  --color-primary-edge: @@L_PRIMARY_EDGE@@;
+  --color-caution: @@L_CAUTION@@;
+  --color-caution-surface: @@L_CAUTION_SURFACE@@;
+  --color-caution-border: @@L_CAUTION_BORDER@@;
+  --color-negative: @@L_NEGATIVE@@;
+  --color-negative-surface: @@L_NEGATIVE_SURFACE@@;
+  --color-negative-border: @@L_NEGATIVE_BORDER@@;
+
+  /* The frontend's radius scale: md is the anchor, the others x0.5 and x1.5. */
+  --radius: @@RADIUS@@;
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+  --font-sans: @@FONT@@;
+
+  /* Tailwind's steps, as the frontend's classes use them: text-xs, text-sm, text-2xl, gap-2... */
+  --text-xs: 0.75rem;
+  --text-xs-line: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm-line: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-2xl-line: 2rem;
+  --tracking-tight: -0.025em;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --column: 28rem;
+  --icon: 1rem;
+  --logo: 2.25rem;
+  /* A button is h-9 in the frontend; on a narrow screen it grows to a 44 px touch target. */
+  --control-height: 2.25rem;
+  --ring-width: 3px;
+  --underline-offset: 0.2em;
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --duration: 200ms;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1114;
-    --surface: #181b1f;
-    --soft: #20242a;
-    --ink: #ecebe7;
-    --muted: #a7acb3;
-    --line: #2b3037;
-    --control: #7b818b;
-    --focus: #ecebe7;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 48px -20px rgb(0 0 0 / 0.7);
-    --accent-edge: @@ACCENT_EDGE_DARK@@;
+    --color-background: @@D_BACKGROUND@@;
+    --color-foreground: @@D_FOREGROUND@@;
+    --color-heading: @@D_HEADING@@;
+    --color-card: @@D_CARD@@;
+    --color-accent: @@D_ACCENT@@;
+    --color-muted-foreground: @@D_MUTED_FOREGROUND@@;
+    --color-border: @@D_BORDER@@;
+    --color-control: @@D_CONTROL@@;
+    --color-ring: @@D_RING@@;
+    --color-primary: @@D_PRIMARY@@;
+    --color-primary-foreground: @@D_PRIMARY_FOREGROUND@@;
+    --color-primary-edge: @@D_PRIMARY_EDGE@@;
+    --color-caution: @@D_CAUTION@@;
+    --color-caution-surface: @@D_CAUTION_SURFACE@@;
+    --color-caution-border: @@D_CAUTION_BORDER@@;
+    --color-negative: @@D_NEGATIVE@@;
+    --color-negative-surface: @@D_NEGATIVE_SURFACE@@;
+    --color-negative-border: @@D_NEGATIVE_BORDER@@;
   }
 }
-*, *::before, *::after { box-sizing: border-box; }
+@media (max-width: 34rem) {
+  :root { --control-height: 2.75rem; }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; border: 0 solid var(--color-border); }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+/* margin: auto rather than centring on the parent, as AuthLayout: a column taller than the window
+   stays reachable from its top. */
+main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem 2rem;
-  background: var(--bg);
-  background: radial-gradient(56rem 28rem at 50% -8rem, color-mix(in srgb, var(--accent) 14%, transparent), transparent 72%), var(--bg);
-  border-top: 4px solid var(--accent);
-  color: var(--ink);
-  font: 400 1rem/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-.card {
+  gap: var(--space-4);
   width: 100%;
-  max-width: 38rem;
-  padding: 2.75rem 3rem 2.5rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 1.25rem;
-  box-shadow: var(--shadow);
+  max-width: var(--column);
+  margin: auto;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0 0 2.25rem;
-  font-weight: 650;
-  font-size: 1.0625rem;
-  letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-line);
+  font-weight: var(--weight-semibold);
 }
-.brand img { display: block; height: 2.25rem; width: auto; max-width: 11rem; object-fit: contain; }
-.status {
+.brand img { display: block; height: var(--logo); width: auto; max-width: calc(var(--logo) * 5); object-fit: contain; }
+/* Badge, in the status tone: caution while maintenance is on, negative when the app is down. */
+.badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1.125rem;
-  padding: 0.3125rem 0.8125rem 0.3125rem 0.6875rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--soft);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  gap: var(--space-2);
+  padding: calc(var(--space-1) / 2) var(--space-2);
+  border-width: 1px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs-line);
+  font-weight: var(--weight-medium);
 }
-.dot {
-  position: relative;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--accent);
-  outline: 1px solid var(--accent-edge);
-}
+.badge-caution { border-color: var(--color-caution-border); background: var(--color-caution-surface); color: var(--color-caution); }
+.badge-negative { border-color: var(--color-negative-border); background: var(--color-negative-surface); color: var(--color-negative); }
+.dot { position: relative; width: var(--space-2); height: var(--space-2); border-radius: 50%; background: currentColor; }
 .dot::after {
   content: "";
   position: absolute;
-  inset: -0.25rem;
+  inset: calc(var(--space-1) * -1);
   border-radius: 50%;
-  border: 2px solid var(--accent);
+  border: 2px solid currentColor;
   opacity: 0;
   animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
@@ -112,68 +163,70 @@ body {
   80%, 100% { transform: scale(1.6); opacity: 0; }
 }
 h1 {
-  margin: 0 0 1rem;
-  font-size: clamp(1.875rem, 1.3rem + 2.2vw, 2.625rem);
-  line-height: 1.12;
-  font-weight: 700;
-  letter-spacing: -0.025em;
+  color: var(--color-heading);
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl-line);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
   text-wrap: balance;
-  overflow-wrap: anywhere;
 }
-.message { color: var(--muted); font-size: 1.0625rem; overflow-wrap: anywhere; }
-.message p { margin: 0 0 0.75rem; }
-.message p:last-child { margin-bottom: 0; }
+.message, .auto, .meta, .until-label { color: var(--color-muted-foreground); }
+.message { font-size: var(--text-sm); line-height: var(--text-sm-line); }
+.message p + p { margin-top: var(--space-3); }
 .until {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
-  margin: 1.75rem 0 0;
-  padding: 0.875rem 1.125rem;
-  border: 1px solid var(--line);
-  border-radius: 0.875rem;
-  background: var(--soft);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-width: 1px;
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-line);
+  text-align: left;
 }
-.until .icon { width: 1.5rem; height: 1.5rem; }
-.until-label { display: block; font-size: 0.8125rem; color: var(--muted); }
-.until time { display: block; font-weight: 650; font-variant-numeric: tabular-nums; }
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 2rem; }
-.auto { margin: 0; font-size: 0.875rem; color: var(--muted); max-width: 22rem; }
+.until-label { display: block; font-size: var(--text-xs); line-height: var(--text-xs-line); }
+.until time { display: block; font-weight: var(--weight-medium); font-variant-numeric: tabular-nums; }
+.actions { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
+.auto, .meta { font-size: var(--text-xs); line-height: var(--text-xs-line); }
 .icon {
   flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
+  width: var(--icon);
+  height: var(--icon);
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.75;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* Button: .btn is the outline variant, .btn-primary the default one. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0.5625rem 1.125rem;
-  border: 1px solid var(--control);
-  border-radius: 0.625rem;
-  background: var(--surface);
-  color: var(--ink);
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  box-shadow: var(--shadow-xs);
+  color: var(--color-foreground);
   font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  line-height: var(--text-sm-line);
+  font-weight: var(--weight-medium);
   text-decoration: none;
-  overflow-wrap: anywhere;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--duration) ease-out;
 }
-.btn:hover { background: var(--soft); text-decoration: underline; text-underline-offset: 0.2em; }
-.btn-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent-edge); }
-.btn-primary:hover { background: var(--accent); }
-.btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.contacts { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
-.contacts h2 { margin: 0 0 0.875rem; font-size: 1rem; font-weight: 650; }
-.contacts ul { display: flex; flex-wrap: wrap; gap: 0.625rem; margin: 0; padding: 0; list-style: none; }
-.meta { margin: 1.5rem 0 0; font-size: 0.8125rem; color: var(--muted); text-align: center; }
+.btn:hover { background: var(--color-accent); }
+.btn-primary { border-color: var(--color-primary-edge); background: var(--color-primary); color: var(--color-primary-foreground); }
+.btn-primary:hover { background: var(--color-primary); text-decoration: underline; text-underline-offset: var(--underline-offset); }
+.btn:focus-visible { outline: var(--ring-width) solid var(--color-ring); outline-offset: 2px; }
+.contacts { width: 100%; margin-top: var(--space-4); padding-top: var(--space-6); border-top-width: 1px; }
+.contacts h2 { margin-bottom: var(--space-3); font-size: var(--text-sm); line-height: var(--text-sm-line); font-weight: var(--weight-semibold); }
+.contacts ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); padding: 0; list-style: none; }
+.meta { padding: 0 var(--space-4) var(--space-6); text-align: center; }
 .sr-only {
   position: absolute;
   width: 1px;
@@ -186,27 +239,23 @@ h1 {
   border: 0;
 }
 @media (max-width: 34rem) {
-  body { justify-content: flex-start; padding: 0 0 1.5rem; }
-  .card { padding: 2rem 1.25rem 1.75rem; border-width: 0 0 1px; border-radius: 0; box-shadow: none; }
-  .brand { margin-bottom: 1.75rem; }
-  .actions { flex-direction: column; align-items: stretch; }
-  .btn { width: 100%; }
+  .actions { align-self: stretch; }
   .contacts ul { flex-direction: column; }
-  .meta { padding: 0 1.25rem; }
+  .btn { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 @media (forced-colors: active) {
-  .btn { border-color: ButtonText; }
+  .btn, .badge { border-color: ButtonText; }
   .dot { background: CanvasText; }
 }
 </style>
 </head>
 <body>
-<main class="card">
+<main>
 @@BRAND@@
-<p class="status"><span class="dot" aria-hidden="true"></span>@@STATUS@@</p>
+<p class="badge badge-@@TONE@@ status"><span class="dot" aria-hidden="true"></span>@@STATUS@@</p>
 <h1>@@TITLE@@</h1>
 <div class="message">
 @@MESSAGE@@

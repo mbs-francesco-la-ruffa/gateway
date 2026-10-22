@@ -9,6 +9,10 @@ Expectations, every key optional:
   img                            the logo's src, or null for no image
   until                          the <time datetime>, or null for none
   contrast                       true: measure every colour pair in both themes
+  tokens                         {"color-primary": ["#light", "#dark"], ...}: the token in each theme
+  radius / font                  the --radius value / the start of the --font-sans stack
+
+Always checked as well: below the token blocks the style writes no colour, length or font of its own.
 
 Always checked: one <main>, one <h1>, one <script> (the page's own), no tag beyond the ones the template
 uses, every id unique, every aria-labelledby pointing at an id, the only event handler the logo's.
@@ -105,30 +109,45 @@ def themes(style):
     return {"light": light, "dark": {**light, **block(dark.group(1))}}
 
 
-# (foreground, background, minimum): text pairs ask 4.5 (WCAG 1.4.3 AA), a control's edge or the focus
-# ring 3 (1.4.11). `tint` is the page background under the accent wash at the top, 14% as in the CSS.
+# (foreground, background, minimum), on the frontend's token names: text asks 4.5 (WCAG 1.4.3 AA), a
+# control's edge or the focus ring 3 (1.4.11). The badge's ink sits on its own surface, the hover fill
+# under the ink, the expected time on the card.
 PAIRS = [
-    ("ink", "bg", 4.5), ("ink", "surface", 4.5), ("ink", "soft", 4.5), ("ink", "tint", 4.5),
-    ("muted", "bg", 4.5), ("muted", "surface", 4.5), ("muted", "soft", 4.5), ("muted", "tint", 4.5),
-    ("on-accent", "accent", 4.5),
-    ("control", "surface", 3), ("accent-edge", "surface", 3),
-    ("focus", "surface", 3), ("focus", "bg", 3),
+    ("color-foreground", "color-background", 4.5), ("color-foreground", "color-card", 4.5),
+    ("color-foreground", "color-accent", 4.5), ("color-heading", "color-background", 4.5),
+    ("color-muted-foreground", "color-background", 4.5), ("color-muted-foreground", "color-card", 4.5),
+    ("color-primary-foreground", "color-primary", 4.5),
+    ("color-caution", "color-caution-surface", 4.5), ("color-negative", "color-negative-surface", 4.5),
+    ("color-control", "color-background", 3), ("color-primary-edge", "color-background", 3),
+    ("color-ring", "color-background", 3),
 ]
 
 
 def check_contrast(style, failures, report):
-    if "color-mix(in srgb, var(--accent) 14%, transparent)" not in style:
-        failures.append("the accent wash is no longer 14%: update PAIRS' tint with it")
     for name, colours in themes(style).items():
         rgb = {k: hex_rgb(v) for k, v in colours.items()}
-        rgb["tint"] = mix(rgb["accent"], rgb["bg"], 0.14)
         worst = []
         for fg, bg, minimum in PAIRS:
+            if fg not in rgb or bg not in rgb:
+                failures.append(f"{name}: no --{fg} or --{bg} in the page's tokens")
+                continue
             r = ratio(rgb[fg], rgb[bg])
             worst.append(f"{fg}/{bg} {r:.2f}")
             if r < minimum:
-                failures.append(f"{name}: {fg} on {bg} is {r:.2f}:1, below {minimum}:1 (accent {colours['accent']})")
+                failures.append(f"{name}: {fg} on {bg} is {r:.2f}:1, below {minimum}:1 (primary {colours.get('color-primary')})")
         report.append(f"{name}: " + ", ".join(worst))
+
+
+def check_tokens(style, failures):
+    """Below the token blocks, the style names no colour, length or font of its own: every value is a var()."""
+    rules = style[style.index("*, *::before"):] if "*, *::before" in style else style
+    rules = re.sub(r"@media[^{]*", "", rules)  # a media query cannot read a custom property
+    for colour in re.findall(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgb|hsl)a?\((?!0 0 0 / )", rules):
+        failures.append(f"a colour written outside the tokens: {colour}")
+    for length in re.findall(r"(?<![\w.-])\d*\.?\d+(?:rem|em)\b", rules):
+        failures.append(f"a length written outside the tokens: {length}")
+    if re.search(r"font-family:(?!\s*var\()", rules):
+        failures.append("a font family written outside the tokens")
 
 
 def main():
@@ -185,6 +204,15 @@ def main():
         times = [a.get("datetime") for t, a in tags if t == "time"]
         if times != ([] if expect["until"] is None else [expect["until"]]):
             failures.append(f"<time> elements are {times}, expected {expect['until']!r}")
+    check_tokens(page.style, failures)
+    for key, value in expect.get("tokens", {}).items():
+        light, dark = (themes(page.style)[t].get(key) for t in ("light", "dark"))
+        if [light, dark] != value:
+            failures.append(f"--{key} is {light} light, {dark} dark, expected {value}")
+    if "radius" in expect and f"--radius: {expect['radius']};" not in page.style:
+        failures.append(f"--radius is not {expect['radius']}")
+    if "font" in expect and not re.search(r"--font-sans: " + re.escape(expect["font"]), page.style):
+        failures.append(f"--font-sans does not start with {expect['font']}")
     if expect.get("contrast"):
         try:
             check_contrast(page.style, failures, report)

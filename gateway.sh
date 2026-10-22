@@ -26,9 +26,14 @@
 #
 #   The page, every variable optional (README.md, «La pagina»):
 #   MAINTENANCE_TITLE, MAINTENANCE_MESSAGE, MAINTENANCE_UNTIL (`2026-10-22T18:00`, `2026-10-22 18:00`
-#   or `18:00`), MAINTENANCE_BRAND, MAINTENANCE_LOGO_URL (https), MAINTENANCE_COLOR (`#1f5f8b`),
-#   MAINTENANCE_CONTACT_EMAIL, MAINTENANCE_CONTACT_PHONE, MAINTENANCE_CONTACT_URL (https),
-#   MAINTENANCE_CONTACT_URL_LABEL, MAINTENANCE_LANG (`it`, the default, or `en`).
+#   or `18:00`), MAINTENANCE_BRAND, MAINTENANCE_LOGO_URL (https), MAINTENANCE_CONTACT_EMAIL,
+#   MAINTENANCE_CONTACT_PHONE, MAINTENANCE_CONTACT_URL (https), MAINTENANCE_CONTACT_URL_LABEL,
+#   MAINTENANCE_LANG (`it`, the default, or `en`).
+#   Its look, every variable optional too, on top of the frontend's own (README.md, «Lo stile»):
+#   MAINTENANCE_THEME (`neutral`, the default, or `pa`, as the frontend's VITE_BRAND),
+#   MAINTENANCE_COLOR and MAINTENANCE_COLOR_DARK (the primary colour, `#1f5f8b`),
+#   MAINTENANCE_BACKGROUND, MAINTENANCE_BACKGROUND_DARK, MAINTENANCE_TEXT, MAINTENANCE_TEXT_DARK,
+#   MAINTENANCE_RADIUS (`8px`, `0.25rem`), MAINTENANCE_FONT (`sans`, the default, `serif` or `mono`).
 #   MAINTENANCE_HTML         a whole page of your own, served byte for byte: it wins over all of the above.
 #   MAINTENANCE_JSON         the body for a client that wants JSON (a path under /api/, or an Accept
 #                            naming application/json). `{"message":"..."}` when unset, with
@@ -141,15 +146,110 @@ MESSAGE=$(printf '%s' "${MAINTENANCE_MESSAGE:-}" | tr -d '\r')
 [ "${#BRAND}" -le 80 ] || fail "MAINTENANCE_BRAND is ${#BRAND} characters long: 80 at most."
 [ "${#MESSAGE}" -le 2000 ] || fail "MAINTENANCE_MESSAGE is ${#MESSAGE} characters long: 2000 at most."
 
-COLOR=$(one_line "${MAINTENANCE_COLOR:-}")
-if [ -z "$COLOR" ]; then
-  COLOR='#2b5a87'
-elif matches "$COLOR" '^#[0-9A-Fa-f]{3}$'; then
-  COLOR=$(printf '%s' "$COLOR" | sed 's/^#\(.\)\(.\)\(.\)$/#\1\1\2\2\3\3/')
-elif ! matches "$COLOR" '^#[0-9A-Fa-f]{6}$'; then
-  fail "MAINTENANCE_COLOR is [$COLOR]: a hexadecimal colour, #1f5f8b or #fff."
+# --- How the page looks (README.md, «Lo stile»). The theme is one of the frontend's brands; every
+# variable after it moves one token on top of it, and an unset one leaves the theme's.
+
+# THEME: neutral (the template's own palette, the default) or pa, as the frontend's VITE_BRAND.
+THEME=$(one_line "${MAINTENANCE_THEME:-}")
+case "$THEME" in
+  '' | neutral) THEME=neutral ;;
+  pa) ;;
+  *) fail "MAINTENANCE_THEME is [$THEME]: it takes neutral or pa, as the frontend's VITE_BRAND." ;;
+esac
+
+# colour <variable> <value>: empty, or #rgb or #rrggbb, answered as #rrggbb in lower case.
+colour() {
+  c=$(one_line "$2")
+  if [ -z "$c" ]; then
+    return 0
+  elif matches "$c" '^#[0-9A-Fa-f]{3}$'; then
+    c=$(printf '%s' "$c" | sed 's/^#\(.\)\(.\)\(.\)$/#\1\1\2\2\3\3/')
+  elif ! matches "$c" '^#[0-9A-Fa-f]{6}$'; then
+    fail "$1 is [$c]: a hexadecimal colour, #1f5f8b or #fff."
+  fi
+  printf '%s' "$c" | tr 'A-F' 'a-f'
+}
+COLOR=$(colour MAINTENANCE_COLOR "${MAINTENANCE_COLOR:-}") || exit 1
+COLOR_DARK=$(colour MAINTENANCE_COLOR_DARK "${MAINTENANCE_COLOR_DARK:-}") || exit 1
+BACKGROUND=$(colour MAINTENANCE_BACKGROUND "${MAINTENANCE_BACKGROUND:-}") || exit 1
+BACKGROUND_DARK=$(colour MAINTENANCE_BACKGROUND_DARK "${MAINTENANCE_BACKGROUND_DARK:-}") || exit 1
+TEXT=$(colour MAINTENANCE_TEXT "${MAINTENANCE_TEXT:-}") || exit 1
+TEXT_DARK=$(colour MAINTENANCE_TEXT_DARK "${MAINTENANCE_TEXT_DARK:-}") || exit 1
+
+# RADIUS: the anchor of the radius scale, as the frontend's --radius. 0 to 32 px, or 0 to 2 rem.
+RADIUS=$(one_line "${MAINTENANCE_RADIUS:-}")
+if [ -z "$RADIUS" ]; then
+  [ "$THEME" = pa ] && RADIUS=0.25rem || RADIUS=0.5rem
+elif ! { matches "$RADIUS" '^[0-9]{1,2}px$' && [ "${RADIUS%px}" -le 32 ]; } &&
+  ! { matches "$RADIUS" '^[0-9](\.[0-9]{1,4})?rem$' && awk -v r="${RADIUS%rem}" 'BEGIN { exit !(r <= 2) }'; }; then
+  fail "MAINTENANCE_RADIUS is [$RADIUS]: 0px to 32px, or 0rem to 2rem (8px, 0.25rem)."
 fi
-COLOR=$(printf '%s' "$COLOR" | tr 'A-F' 'a-f')
+
+# FONT: one of three stacks of fonts already on the visitor's device, nothing downloaded. sans is the
+# frontend's own.
+FONT_=$(one_line "${MAINTENANCE_FONT:-}")
+case "$FONT_" in
+  '' | sans) FONT='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"' ;;
+  serif) FONT='ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' ;;
+  mono) FONT='ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' ;;
+  *) fail "MAINTENANCE_FONT is [$FONT_]: it takes sans, serif or mono." ;;
+esac
+
+# THE PALETTE: every colour token of the page, light (L_) and dark (D_), one `L_NAME #rrggbb` per line.
+# The two themes are the frontend's (packages/shared/src/styles/themes/neutral.css and pa.css in the
+# template), converted from hsl to hex. On top of them:
+#   - a background or text colour of your own: the text must reach 4.5:1 on the background or the start
+#     is refused; the secondary text, the hairlines, the control edge and the hover fill are then mixed
+#     from the two, each at the mix nearest the background that still clears its own minimum;
+#   - a primary colour: the text on it is white, the theme's darkest ink or black, the first reaching
+#     4.5:1 (black always does when the other two do not); its edge is the colour itself when it stands
+#     out from the page by 3:1, the text colour otherwise.
+# The status tones (caution, negative) stay the theme's: each carries its own surface.
+PALETTE=$(awk -v theme="$THEME" -v pl="$COLOR" -v pd="${COLOR_DARK:-$COLOR}" \
+  -v bl="$BACKGROUND" -v bd="$BACKGROUND_DARK" -v tl="$TEXT" -v td="$TEXT_DARK" '
+  function lin(x) { x = x / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ^ 2.4 }
+  function hex(s,   i, v) { v = 0; for (i = 1; i <= length(s); i++) v = v * 16 + index("0123456789abcdef", substr(s, i, 1)) - 1; return v }
+  function ch(h, n) { return hex(substr(h, 2 + 2 * n, 2)) }
+  function lum(h) { return 0.2126 * lin(ch(h, 0)) + 0.7152 * lin(ch(h, 1)) + 0.0722 * lin(ch(h, 2)) }
+  function ratio(a, b,   x, y) { x = lum(a); y = lum(b); return x > y ? (x + 0.05) / (y + 0.05) : (y + 0.05) / (x + 0.05) }
+  # mix(top, bottom, share): that share of top over bottom.
+  function mix(a, b, t,   n, s) { s = "#"; for (n = 0; n < 3; n++) s = s sprintf("%02x", int(ch(a, n) * t + ch(b, n) * (1 - t) + 0.5)); return s }
+  # least(fg, bg, from, minimum): the mix of fg over bg nearest bg, from that share up, reaching minimum.
+  function least(f, b, t, m) { for (; t < 1; t += 0.02) if (ratio(mix(f, b, t), b) >= m) return mix(f, b, t); return f }
+  function on(c) { return ratio(c, "#ffffff") >= 4.5 ? "#ffffff" : (ratio(c, "#020817") >= 4.5 ? "#020817" : "#000000") }
+  function set(p, s,   n, kv, i) { n = split(s, kv, " "); for (i = 1; i < n; i += 2) T[p "_" kv[i]] = kv[i + 1] }
+  function shape(p, bg, fg, primary, name,   b, f, s) {
+    b = T[p "_BACKGROUND"]; f = T[p "_FOREGROUND"]; s = (p == "D" ? "_DARK" : "")
+    if (bg != "" || fg != "") {
+      if (bg != "") b = bg
+      if (fg != "") f = fg
+      if (ratio(f, b) < 4.5) {
+        printf "ERR %s theme: text %s on background %s is %.2f:1, AA asks 4.5:1 (MAINTENANCE_TEXT%s, MAINTENANCE_BACKGROUND%s; the theme colour where unset).\n", name, f, b, ratio(f, b), s, s
+        failed = 1
+        return
+      }
+      T[p "_BACKGROUND"] = b; T[p "_FOREGROUND"] = f; T[p "_CARD"] = b; T[p "_RING"] = f
+      if (fg != "" || ratio(T[p "_HEADING"], b) < 4.5) T[p "_HEADING"] = f
+      T[p "_ACCENT"] = mix(f, b, 0.06)
+      if (ratio(f, T[p "_ACCENT"]) < 4.5) T[p "_ACCENT"] = b
+      T[p "_BORDER"] = mix(f, b, 0.15)
+      T[p "_MUTED_FOREGROUND"] = least(f, b, 0.5, 4.5)
+      T[p "_CONTROL"] = least(f, b, 0.3, 3)
+    }
+    if (primary != "") T[p "_PRIMARY"] = primary
+    T[p "_PRIMARY_FOREGROUND"] = on(T[p "_PRIMARY"])
+    T[p "_PRIMARY_EDGE"] = ratio(T[p "_PRIMARY"], b) >= 3 ? T[p "_PRIMARY"] : f
+  }
+  BEGIN {
+    set("L", "BACKGROUND #f3f6f9 FOREGROUND #020817 HEADING #020817 CARD #ffffff ACCENT #eaf0f6 MUTED_FOREGROUND #57687f BORDER #e2e8f0 CONTROL #7389a5 RING #020817 PRIMARY #504ec6 CAUTION #8b480e CAUTION_SURFACE #fdf0d0 CAUTION_BORDER #eac06c NEGATIVE #ab2121 NEGATIVE_SURFACE #fce6e6 NEGATIVE_BORDER #edb1b1")
+    set("D", "BACKGROUND #020817 FOREGROUND #f8fafc HEADING #f8fafc CARD #0b1220 ACCENT #1e293b MUTED_FOREGROUND #94a3b8 BORDER #1e293b CONTROL #5e6c82 RING #cbd5e1 PRIMARY #f8fafc CAUTION #f5c75c CAUTION_SURFACE #2d2111 CAUTION_BORDER #644f2b NEGATIVE #f27d7d NEGATIVE_SURFACE #301313 NEGATIVE_BORDER #6a2f2f")
+    if (theme == "pa")
+      set("L", "FOREGROUND #1a1a1a HEADING #05263d PRIMARY #0066cc CAUTION #995c00 CAUTION_SURFACE #fdebd0 CAUTION_BORDER #ecc283 NEGATIVE #cc334d NEGATIVE_SURFACE #fdf1f3 NEGATIVE_BORDER #eeb5be")
+    shape("L", bl, tl, pl, "light")
+    if (!failed) shape("D", bd, td, pd, "dark")
+    if (!failed) for (k in T) print k " " T[k]
+  }')
+case "$PALETTE" in ERR\ *) fail "${PALETTE#ERR }" ;; esac
 
 # An address the page links to: https, a host, an optional port, then a path without quotes, angle
 # brackets, back slashes or spaces. Escaped on top of that.
@@ -289,28 +389,17 @@ if [ -n "${MAINTENANCE_HTML:-}" ]; then
   printf '%s' "$MAINTENANCE_HTML" >"$PAGES/index-on.html"
   printf '%s' "$MAINTENANCE_HTML" >"$PAGES/index-off.html"
 else
-  # The accent: the text drawn on it (black or white, whichever contrasts more, which is never below
-  # 4.58:1) and its edge on each theme's card (the accent itself when it stands out from the card by 3:1,
-  # the ink otherwise). The two card colours are the page's --surface, light and dark.
-  ACCENT_LINE=$(awk -v c="$COLOR" '
-    function lin(x) { x = x / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ^ 2.4 }
-    function hex(s,   i, v) { v = 0; for (i = 1; i <= length(s); i++) v = v * 16 + index("0123456789abcdef", substr(s, i, 1)) - 1; return v }
-    function lum(h) { return 0.2126 * lin(hex(substr(h, 2, 2))) + 0.7152 * lin(hex(substr(h, 4, 2))) + 0.0722 * lin(hex(substr(h, 6, 2))) }
-    function ratio(a, b) { return a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05) }
-    BEGIN {
-      l = lum(c)
-      on = ratio(l, 1) >= ratio(l, 0) ? "#ffffff" : "#000000"
-      light = ratio(l, lum("#ffffff")) >= 3 ? c : "#17191d"
-      dark = ratio(l, lum("#181b1f")) >= 3 ? c : "#ecebe7"
-      print on " " light " " dark
-    }')
-  set -- $ACCENT_LINE
-
+  # The tokens: every line of the palette becomes GW_L_<NAME> or GW_D_<NAME>. The names and the
+  # values come from the awk above alone (a fixed list of names, #rrggbb values), never from a variable.
+  while read -r name value; do
+    eval "GW_$name=\$value"
+    export "GW_$name"
+  done <<PALETTE
+$PALETTE
+PALETTE
   GW_LANG=$LANG_
-  GW_ACCENT=$COLOR
-  GW_ON_ACCENT=$1
-  GW_ACCENT_EDGE_LIGHT=$2
-  GW_ACCENT_EDGE_DARK=$3
+  GW_RADIUS=$RADIUS
+  GW_FONT=$FONT
   GW_TITLE=$(esc "$TITLE")
   if [ -n "$BRAND" ]; then GW_DOC_TITLE="$GW_TITLE · $(esc "$BRAND")"; else GW_DOC_TITLE=$GW_TITLE; fi
   GW_RETRY=$(esc "$T_RETRY")
@@ -352,17 +441,17 @@ else
     GW_CONTACTS="<section class=\"contacts\" aria-labelledby=\"gw-help\"><h2 id=\"gw-help\">$(esc "$T_HELP")</h2><ul>$items</ul></section>"
   fi
 
-  export GW_LANG GW_ACCENT GW_ON_ACCENT GW_ACCENT_EDGE_LIGHT GW_ACCENT_EDGE_DARK GW_TITLE GW_DOC_TITLE \
+  export GW_LANG GW_RADIUS GW_FONT GW_TITLE GW_DOC_TITLE \
     GW_RETRY GW_AUTO GW_LAST GW_BACK GW_CODE GW_BRAND GW_UNTIL GW_CONTACTS
 
   # Each @@NAME@@ in the template becomes GW_NAME, in one pass: what a value contains is never read
   # again, so a value holding @@TITLE@@ stays text. A name the script does not export stops the start.
   for m in on off; do
-    if [ "$m" = on ]; then GW_STATUS=$(esc "$T_STATUS_ON"); text=${MESSAGE:-$T_MESSAGE_ON}
-    else GW_STATUS=$(esc "$T_STATUS_OFF"); text=${MESSAGE:-$T_MESSAGE_OFF}; fi
+    if [ "$m" = on ]; then GW_STATUS=$(esc "$T_STATUS_ON"); GW_TONE=caution; text=${MESSAGE:-$T_MESSAGE_ON}
+    else GW_STATUS=$(esc "$T_STATUS_OFF"); GW_TONE=negative; text=${MESSAGE:-$T_MESSAGE_OFF}; fi
     # A blank line starts a new paragraph, a single new line is a line break.
     GW_MESSAGE=$(esc "$text" | awk 'BEGIN { RS = "" } { gsub(/[ \t]*\n[ \t]*/, "<br>"); sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); printf "<p>%s</p>\n", $0 }')
-    export GW_STATUS GW_MESSAGE
+    export GW_STATUS GW_TONE GW_MESSAGE
     awk '
       {
         out = ""; line = $0
