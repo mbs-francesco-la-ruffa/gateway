@@ -1,5 +1,5 @@
 {
-  "name": "@mbssrl/gateway",
+  "name": "@mbs-francesco-la-ruffa/gateway",
   "version": "1.0.0",
   "description": "The maintenance switch for a Railway project with the MBS gateway in front (README.md).",
   "private": true,

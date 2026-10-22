@@ -2,7 +2,7 @@
 # maintenance page from variables at every start (README.md). Dependabot proposes the new Caddy.
 FROM caddy:2.11.7-alpine
 
-LABEL org.opencontainers.image.source="https://github.com/MbsSrl/gateway" \
+LABEL org.opencontainers.image.source="https://github.com/mbs-francesco-la-ruffa/gateway" \
       org.opencontainers.image.description="Gateway for Railway projects: routes the public domains over the private network and shows a maintenance page." \
       org.opencontainers.image.licenses="UNLICENSED"
 

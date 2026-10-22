@@ -9,7 +9,7 @@ il **gateway**, che possiede i domini pubblici e
 - in ogni caso mostra da solo la stessa pagina quando il servizio dietro è spento, non risponde entro
   5 secondi, o risponde 502, 503 o 504.
 
-È un'immagine pronta, `ghcr.io/mbssrl/gateway`: Caddy a una versione fissa più uno script che a ogni
+È un'immagine pronta, `ghcr.io/mbs-francesco-la-ruffa/gateway`: Caddy a una versione fissa più uno script che a ogni
 avvio scrive la configurazione e la pagina partendo dalle variabili. Accendere o spegnere la
 manutenzione, o cambiarne il testo, vuol dire cambiare una variabile: Railway riavvia l'immagine, **senza
 build e senza coda**, in pochi secondi. Il DNS del cliente non cambia mai.
@@ -44,7 +44,7 @@ farlo a mano: vedi il suo `docs/maintenance.md`.
 
 ### Progetto nuovo, o dominio generato `*.up.railway.app`
 
-1. Nel canvas del progetto: **+ Create** → **Docker Image** → `ghcr.io/mbssrl/gateway:1.0.0`. Chiama il
+1. Nel canvas del progetto: **+ Create** → **Docker Image** → `ghcr.io/mbs-francesco-la-ruffa/gateway:1.0.0`. Chiama il
    servizio `gateway`.
 2. **Variables** (Raw Editor), per esempio con un'app sola:
    ```
@@ -70,7 +70,7 @@ Se sposti un dominio personalizzato su un altro servizio, Railway chiede un reco
 del cliente. Per non toccarlo, il dominio resta dov'è e **il servizio che lo possiede diventa il gateway**,
 mentre l'app passa in un servizio nuovo, duplicato di quello vecchio (una sola build). Il procedimento
 passo per passo, con il sito sempre su, è nel template, `docs/maintenance.md`, «Putting a gateway in
-front of a project already on Railway»: dove dice «Connect Image», usa `ghcr.io/mbssrl/gateway:1.0.0` e
+front of a project already on Railway»: dove dice «Connect Image», usa `ghcr.io/mbs-francesco-la-ruffa/gateway:1.0.0` e
 nessuno start command.
 
 ### Le reti private vecchie
@@ -143,12 +143,12 @@ funziona da qualunque cartella:
 
 ```bash
 # dalla cartella di un progetto collegato a Railway (railway link)
-npx github:MbsSrl/gateway#v1.0.0 status
-npx github:MbsSrl/gateway#v1.0.0 on
-npx github:MbsSrl/gateway#v1.0.0 off
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 status
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 on
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 off
 
 # da qualunque altra cartella, nominando progetto e ambiente
-npx github:MbsSrl/gateway#v1.0.0 on --project <id o nome> --environment production --service gateway
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 on --project <id o nome> --environment production --service gateway
 
 # oppure da una copia di questa repo
 node bin/maintenance.mjs status --project <id> --environment production
@@ -165,10 +165,10 @@ Non serve accendere la manutenzione quando l'app è giù: la pagina compare da s
 
 ## Aggiornare la versione in un progetto
 
-L'immagine è sempre nominata con la versione esatta (`ghcr.io/mbssrl/gateway:1.0.0`): un progetto non
+L'immagine è sempre nominata con la versione esatta (`ghcr.io/mbs-francesco-la-ruffa/gateway:1.0.0`): un progetto non
 cambia mai senza che qualcuno lo decida. Per passare a una versione nuova:
 
-- dalla dashboard: Settings → Source → l'immagine → `ghcr.io/mbssrl/gateway:1.1.0`, poi **Deploy**;
+- dalla dashboard: Settings → Source → l'immagine → `ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0`, poi **Deploy**;
 - nel template: la costante `GATEWAY_IMAGE` in `.railway/railway.ts`, poi `pnpm railway:plan` e
   `pnpm railway:apply`; insieme si aggiorna la versione del comando nello script `maintenance` di
   `package.json`.
@@ -186,7 +186,7 @@ un'immagine da solo: conviene la versione esatta.
    git tag v1.1.0
    git push origin v1.1.0
    ```
-4. GitHub Actions rifà le prove e pubblica `ghcr.io/mbssrl/gateway:1.1.0`, `:1.1` e `:1` (amd64 e arm64).
+4. GitHub Actions rifà le prove e pubblica `ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0`, `:1.1` e `:1` (amd64 e arm64).
    Se il tag e `package.json` non coincidono, si ferma.
 
 Le versioni seguono semver: una correzione è `1.0.1`, una variabile nuova `1.1.0`, qualcosa che cambia il
@@ -201,15 +201,18 @@ L'immagine deve essere **pubblica**, così Railway la scarica senza credenziali.
 segreto: i valori arrivano tutti dalle variabili del progetto. La prima pubblicazione crea il pacchetto
 privato; va reso pubblico una volta sola:
 
-1. GitHub → organizzazione **MbsSrl** → **Packages** → `gateway`.
+1. GitHub → profilo **mbs-francesco-la-ruffa** → **Packages** → `gateway`.
 2. **Package settings** → **Danger Zone** → **Change visibility** → **Public**, e conferma.
-3. Se l'organizzazione non permette pacchetti pubblici: Settings dell'organizzazione → **Packages** →
-   abilita «Public» fra le visibilità consentite, poi ripeti il passo 2.
 
-Prova: `docker pull ghcr.io/mbssrl/gateway:1.0.0` da un computer senza `docker login` a ghcr.io.
+La repo sta sull'account personale perché l'organizzazione MbsSrl non permette pacchetti pubblici.
+Se viene trasferita (per esempio a MbsSrl), il workflow pubblica da solo sotto il nuovo proprietario:
+nei progetti che lo usano vanno cambiati il nome dell'immagine (`ghcr.io/<nuovo proprietario>/gateway`) e
+il comando (`github:<nuovo proprietario>/gateway`), e il nuovo pacchetto va reso pubblico come sopra.
 
-Il comando (`npx github:MbsSrl/gateway`) legge invece la repo: se la repo è privata funziona solo per chi
-ha accesso con le proprie credenziali git; in quel caso usa `git+ssh://git@github.com/MbsSrl/gateway.git#v1.0.0`.
+Prova: `docker pull ghcr.io/mbs-francesco-la-ruffa/gateway:1.0.0` da un computer senza `docker login` a ghcr.io.
+
+Il comando (`npx github:mbs-francesco-la-ruffa/gateway`) legge invece la repo: se la repo è privata funziona solo per chi
+ha accesso con le proprie credenziali git; in quel caso usa `git+ssh://git@github.com/mbs-francesco-la-ruffa/gateway.git#v1.0.0`.
 
 ## Fuori da Railway
 
@@ -235,13 +238,13 @@ Con il file presente valgono la stessa pagina «Manutenzione in corso» e gli st
 
 ```bash
 # il container è sulla tua macchina
-npx github:MbsSrl/gateway#v1.0.0 on  --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 on  --docker gateway-gateway-1
 # il container è su un server raggiungibile in ssh
-npx github:MbsSrl/gateway#v1.0.0 on  --ssh deploy@server.cliente.it --docker gateway-gateway-1
-npx github:MbsSrl/gateway#v1.0.0 off --ssh deploy@server.cliente.it --docker gateway-gateway-1
-npx github:MbsSrl/gateway#v1.0.0 status --ssh deploy@server.cliente.it --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 on  --ssh deploy@server.cliente.it --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 off --ssh deploy@server.cliente.it --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 status --ssh deploy@server.cliente.it --docker gateway-gateway-1
 # senza docker exec: il file nel volume, come lo vede il server
-npx github:MbsSrl/gateway#v1.0.0 on  --ssh deploy@server.cliente.it --path /srv/gateway/data/maintenance.on
+npx github:mbs-francesco-la-ruffa/gateway#v1.0.0 on  --ssh deploy@server.cliente.it --path /srv/gateway/data/maintenance.on
 ```
 
 `--docker` è il nome del container (`docker compose ps`); `--path` serve solo se hai cambiato

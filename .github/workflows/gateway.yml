@@ -1,6 +1,8 @@
 # Every push and pull request: the image is built and checked (tests/check.sh, tests/check-command.sh).
-# A tag v1.2.3: the same checks, then the image is published as ghcr.io/mbssrl/gateway:1.2.3, :1.2 and :1,
+# A tag v1.2.3: the same checks, then the image is published as ghcr.io/<owner>/gateway:1.2.3, :1.2 and :1,
 # for amd64 and arm64. No `latest`: a project names the version it runs (README.md).
+# <owner> is the owner of this repository in lowercase (GHCR refuses capitals), read at run time: moving the
+# repository to another account or organization changes the image name without touching this file.
 name: gateway
 
 on:
@@ -50,10 +52,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/gateway" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/mbssrl/gateway
+          images: ${{ steps.image.outputs.name }}
           flavor: latest=false
           tags: |
             type=semver,pattern={{version}}
