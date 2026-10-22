@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="@@LANG@@">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>@@DOC_TITLE@@</title>
+<style>
+/* The maintenance page (README.md, «La pagina»). gateway.sh fills every placeholder at start, escaped.
+   Light and dark follow the visitor's system; tests/page_check.py measures every pair of colours below
+   that carries text or marks a control, for any accent. */
+:root {
+  color-scheme: light dark;
+  --bg: #f3f2ee;
+  --surface: #ffffff;
+  --soft: #f3f2ee;
+  --ink: #17191d;
+  --muted: #545961;
+  --line: #e2dfd7;
+  --control: #7b808a;
+  --focus: #17191d;
+  --shadow: 0 1px 2px rgb(23 25 29 / 0.05), 0 18px 48px -20px rgb(23 25 29 / 0.22);
+  --accent: @@ACCENT@@;
+  --on-accent: @@ON_ACCENT@@;
+  --accent-edge: @@ACCENT_EDGE_LIGHT@@;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1114;
+    --surface: #181b1f;
+    --soft: #20242a;
+    --ink: #ecebe7;
+    --muted: #a7acb3;
+    --line: #2b3037;
+    --control: #7b818b;
+    --focus: #ecebe7;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 48px -20px rgb(0 0 0 / 0.7);
+    --accent-edge: @@ACCENT_EDGE_DARK@@;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem 2rem;
+  background: var(--bg);
+  background: radial-gradient(56rem 28rem at 50% -8rem, color-mix(in srgb, var(--accent) 14%, transparent), transparent 72%), var(--bg);
+  border-top: 4px solid var(--accent);
+  color: var(--ink);
+  font: 400 1rem/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.card {
+  width: 100%;
+  max-width: 38rem;
+  padding: 2.75rem 3rem 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 2.25rem;
+  font-weight: 650;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.brand img { display: block; height: 2.25rem; width: auto; max-width: 11rem; object-fit: contain; }
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.125rem;
+  padding: 0.3125rem 0.8125rem 0.3125rem 0.6875rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.dot {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--accent);
+  outline: 1px solid var(--accent-edge);
+}
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: -0.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes ping {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  80%, 100% { transform: scale(1.6); opacity: 0; }
+}
+h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.875rem, 1.3rem + 2.2vw, 2.625rem);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.message { color: var(--muted); font-size: 1.0625rem; overflow-wrap: anywhere; }
+.message p { margin: 0 0 0.75rem; }
+.message p:last-child { margin-bottom: 0; }
+.until {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin: 1.75rem 0 0;
+  padding: 0.875rem 1.125rem;
+  border: 1px solid var(--line);
+  border-radius: 0.875rem;
+  background: var(--soft);
+}
+.until .icon { width: 1.5rem; height: 1.5rem; }
+.until-label { display: block; font-size: 0.8125rem; color: var(--muted); }
+.until time { display: block; font-weight: 650; font-variant-numeric: tabular-nums; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; margin-top: 2rem; }
+.auto { margin: 0; font-size: 0.875rem; color: var(--muted); max-width: 22rem; }
+.icon {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5625rem 1.125rem;
+  border: 1px solid var(--control);
+  border-radius: 0.625rem;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: background-color 0.15s ease;
+}
+.btn:hover { background: var(--soft); text-decoration: underline; text-underline-offset: 0.2em; }
+.btn-primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent-edge); }
+.btn-primary:hover { background: var(--accent); }
+.btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.contacts { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.contacts h2 { margin: 0 0 0.875rem; font-size: 1rem; font-weight: 650; }
+.contacts ul { display: flex; flex-wrap: wrap; gap: 0.625rem; margin: 0; padding: 0; list-style: none; }
+.meta { margin: 1.5rem 0 0; font-size: 0.8125rem; color: var(--muted); text-align: center; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 34rem) {
+  body { justify-content: flex-start; padding: 0 0 1.5rem; }
+  .card { padding: 2rem 1.25rem 1.75rem; border-width: 0 0 1px; border-radius: 0; box-shadow: none; }
+  .brand { margin-bottom: 1.75rem; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .btn { width: 100%; }
+  .contacts ul { flex-direction: column; }
+  .meta { padding: 0 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .btn { border-color: ButtonText; }
+  .dot { background: CanvasText; }
+}
+</style>
+</head>
+<body>
+<main class="card">
+@@BRAND@@
+<p class="status"><span class="dot" aria-hidden="true"></span>@@STATUS@@</p>
+<h1>@@TITLE@@</h1>
+<div class="message">
+@@MESSAGE@@
+</div>
+@@UNTIL@@
+<div class="actions">
+<a class="btn btn-primary" href="" id="gw-retry"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>@@RETRY@@</a>
+<p class="auto" id="gw-auto" hidden>@@AUTO@@ <span id="gw-last" data-text="@@LAST@@"></span></p>
+</div>
+<p class="sr-only" id="gw-live" role="status" data-text="@@BACK@@"></p>
+@@CONTACTS@@
+</main>
+<footer class="meta">@@CODE@@</footer>
+<script>
+// While this page is open, ask the same address every now and then (10 s, growing to a minute, and
+// never while the tab is hidden). The gateway's page carries X-Gateway: maintenance and the app does
+// not, so an answer without it means the service is back: reload. A network error just waits.
+(function () {
+  var auto = document.getElementById('gw-auto');
+  var last = document.getElementById('gw-last');
+  var live = document.getElementById('gw-live');
+  if (!window.fetch || !auto) return;
+  auto.hidden = false;
+  var first = 10000, delay = first, max = 60000, timer = 0, busy = false;
+  var here = location.href.split('#')[0];
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function schedule() {
+    clearTimeout(timer);
+    if (!document.hidden) timer = setTimeout(check, delay);
+  }
+  function check() {
+    if (busy) return;
+    busy = true;
+    fetch(here, { cache: 'no-store', redirect: 'manual', credentials: 'same-origin', headers: { Accept: 'text/html' } })
+      .then(function (response) {
+        if (response.body && response.body.cancel) response.body.cancel();
+        if (response.type === 'opaqueredirect' || response.headers.get('X-Gateway') !== 'maintenance') {
+          live.textContent = live.getAttribute('data-text');
+          location.replace(here);
+          return true;
+        }
+        var now = new Date();
+        last.textContent = last.getAttribute('data-text').replace('{time}', two(now.getHours()) + ':' + two(now.getMinutes()));
+      }, function () {})
+      .then(function (back) {
+        busy = false;
+        if (back) return;
+        delay = Math.min(max, Math.round(delay * 1.5));
+        schedule();
+      });
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { clearTimeout(timer); return; }
+    delay = first;
+    check();
+  });
+  schedule();
+})();
+</script>
+</body>
+</html>

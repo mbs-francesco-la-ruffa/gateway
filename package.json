@@ -1,0 +1,20 @@
+{
+  "name": "@mbssrl/gateway",
+  "version": "1.0.0",
+  "description": "The maintenance switch for a Railway project with the MBS gateway in front (README.md).",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "gateway-maintenance": "bin/maintenance.mjs"
+  },
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "bash tests/check.sh && bash tests/check-command.sh",
+    "maintenance": "node bin/maintenance.mjs"
+  }
+}

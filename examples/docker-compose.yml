@@ -1,0 +1,39 @@
+# The gateway away from Railway: on a server with docker compose, straight on the internet, in front of
+# one app (README.md, «Fuori da Railway»). Copy it next to your own compose file, put your domain in
+# ROUTES (its DNS must already point at this server) and your address in TLS_EMAIL, then
+# `docker compose up -d`. Caddy gets the certificate by itself on the first start.
+#
+# To try it on your own computer, with no domain and no Let's Encrypt:
+#   GATEWAY_TLS=internal GATEWAY_HOST=app.localhost docker compose -f examples/docker-compose.yml up -d
+#   curl -k https://app.localhost/
+services:
+  gateway:
+    image: ghcr.io/mbssrl/gateway:1.0.0
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_HTTP_PORT:-80}:80"
+      - "${GATEWAY_HTTPS_PORT:-443}:443"
+    environment:
+      TLS: ${GATEWAY_TLS:-auto}
+      TLS_EMAIL: ops@example.it
+      ROUTES: ${GATEWAY_HOST:-app.example.it}=http://app:80
+      # With TLS on, nobody's X-Forwarded-* is believed (the default): the gateway writes them itself.
+      # Behind a load balancer of yours, list its addresses instead: TRUSTED_PROXIES: 10.0.0.0/8
+      MAINTENANCE_BRAND: Esempio
+      MAINTENANCE_CONTACT_EMAIL: assistenza@example.it
+    volumes:
+      # The certificates and the switch file (/data/maintenance.on). Keep it: without it every restart
+      # asks Let's Encrypt again, which has a weekly limit.
+      - gateway_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/_gateway/health"]
+      interval: 30s
+      timeout: 3s
+
+  # The app: any HTTP service on the compose network, never published on a port of its own.
+  app:
+    image: traefik/whoami:v1.10.3
+    restart: unless-stopped
+
+volumes:
+  gateway_data:

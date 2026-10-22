@@ -1,0 +1,13 @@
+# Proposes the new Caddy (the FROM line in the Dockerfile) and new versions of the actions in the
+# workflow, once a week. A Caddy pull request runs the whole check before anybody merges it; releasing
+# it is then a tag (README.md, «Rilasciare una versione nuova»).
+version: 2
+updates:
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
