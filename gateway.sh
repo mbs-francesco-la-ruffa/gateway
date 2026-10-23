@@ -199,11 +199,12 @@ esac
 # The two themes are the frontend's (packages/shared/src/styles/themes/neutral.css and pa.css in the
 # template), converted from hsl to hex. On top of them:
 #   - a background or text colour of your own: the text must reach 4.5:1 on the background or the start
-#     is refused; the secondary text, the hairlines, the control edge and the hover fill are then mixed
-#     from the two, each at the mix nearest the background that still clears its own minimum;
+#     is refused; the secondary text and the hairlines are then mixed from the two, each at the mix
+#     nearest the background that still clears its own minimum;
 #   - a primary colour: the text on it is white, the theme's darkest ink or black, the first reaching
-#     4.5:1 (black always does when the other two do not); its edge is the colour itself when it stands
-#     out from the page by 3:1, the text colour otherwise.
+#     4.5:1 (black always does when the other two do not); its edge (and the header's stripe) is the
+#     colour itself when it stands out from the page by 3:1, the text colour otherwise; the links take it
+#     when it reaches 4.5:1 on the page, the text colour otherwise.
 # The status tones (caution, negative) stay the theme's: each carries its own surface.
 PALETTE=$(awk -v theme="$THEME" -v pl="$COLOR" -v pd="${COLOR_DARK:-$COLOR}" \
   -v bl="$BACKGROUND" -v bd="$BACKGROUND_DARK" -v tl="$TEXT" -v td="$TEXT_DARK" '
@@ -230,19 +231,17 @@ PALETTE=$(awk -v theme="$THEME" -v pl="$COLOR" -v pd="${COLOR_DARK:-$COLOR}" \
       }
       T[p "_BACKGROUND"] = b; T[p "_FOREGROUND"] = f; T[p "_CARD"] = b; T[p "_RING"] = f
       if (fg != "" || ratio(T[p "_HEADING"], b) < 4.5) T[p "_HEADING"] = f
-      T[p "_ACCENT"] = mix(f, b, 0.06)
-      if (ratio(f, T[p "_ACCENT"]) < 4.5) T[p "_ACCENT"] = b
       T[p "_BORDER"] = mix(f, b, 0.15)
       T[p "_MUTED_FOREGROUND"] = least(f, b, 0.5, 4.5)
-      T[p "_CONTROL"] = least(f, b, 0.3, 3)
     }
     if (primary != "") T[p "_PRIMARY"] = primary
     T[p "_PRIMARY_FOREGROUND"] = on(T[p "_PRIMARY"])
     T[p "_PRIMARY_EDGE"] = ratio(T[p "_PRIMARY"], b) >= 3 ? T[p "_PRIMARY"] : f
+    T[p "_LINK"] = ratio(T[p "_PRIMARY"], b) >= 4.5 ? T[p "_PRIMARY"] : f
   }
   BEGIN {
-    set("L", "BACKGROUND #f3f6f9 FOREGROUND #020817 HEADING #020817 CARD #ffffff ACCENT #eaf0f6 MUTED_FOREGROUND #57687f BORDER #e2e8f0 CONTROL #7389a5 RING #020817 PRIMARY #504ec6 CAUTION #8b480e CAUTION_SURFACE #fdf0d0 CAUTION_BORDER #eac06c NEGATIVE #ab2121 NEGATIVE_SURFACE #fce6e6 NEGATIVE_BORDER #edb1b1")
-    set("D", "BACKGROUND #020817 FOREGROUND #f8fafc HEADING #f8fafc CARD #0b1220 ACCENT #1e293b MUTED_FOREGROUND #94a3b8 BORDER #1e293b CONTROL #5e6c82 RING #cbd5e1 PRIMARY #f8fafc CAUTION #f5c75c CAUTION_SURFACE #2d2111 CAUTION_BORDER #644f2b NEGATIVE #f27d7d NEGATIVE_SURFACE #301313 NEGATIVE_BORDER #6a2f2f")
+    set("L", "BACKGROUND #f3f6f9 FOREGROUND #020817 HEADING #020817 CARD #ffffff MUTED_FOREGROUND #57687f BORDER #e2e8f0 RING #020817 PRIMARY #504ec6 CAUTION #8b480e CAUTION_SURFACE #fdf0d0 CAUTION_BORDER #eac06c NEGATIVE #ab2121 NEGATIVE_SURFACE #fce6e6 NEGATIVE_BORDER #edb1b1")
+    set("D", "BACKGROUND #020817 FOREGROUND #f8fafc HEADING #f8fafc CARD #0b1220 MUTED_FOREGROUND #94a3b8 BORDER #1e293b RING #cbd5e1 PRIMARY #f8fafc CAUTION #f5c75c CAUTION_SURFACE #2d2111 CAUTION_BORDER #644f2b NEGATIVE #f27d7d NEGATIVE_SURFACE #301313 NEGATIVE_BORDER #6a2f2f")
     if (theme == "pa")
       set("L", "FOREGROUND #1a1a1a HEADING #05263d PRIMARY #0066cc CAUTION #995c00 CAUTION_SURFACE #fdebd0 CAUTION_BORDER #ecc283 NEGATIVE #cc334d NEGATIVE_SURFACE #fdf1f3 NEGATIVE_BORDER #eeb5be")
     shape("L", bl, tl, pl, "light")
@@ -325,46 +324,62 @@ if [ -n "$UNTIL" ]; then
 fi
 
 # --- The texts, in the page's language. Italian addresses the reader with «tu».
+# The two states read apart from the first line: maintenance says the service is closed, the other one
+# says something is wrong with it (GOV.UK's «the service is unavailable» and «there is a problem with the
+# service»).
 if [ "$LANG_" = it ]; then
   T_STATUS_ON='Manutenzione in corso'
   T_STATUS_OFF='Servizio non raggiungibile'
-  T_TITLE='Torniamo tra poco'
+  T_TITLE_ON='Ci dispiace, il servizio non è disponibile'
+  T_TITLE_OFF="Ci dispiace, c'è un problema con il servizio"
   T_MESSAGE_ON='Stiamo facendo un intervento di manutenzione. Il servizio torna disponibile appena abbiamo finito: grazie per la pazienza.'
   T_MESSAGE_OFF='In questo momento il servizio non risponde. Stiamo lavorando per ripristinarlo il prima possibile.'
   T_JSON_ON='Servizio in manutenzione, torna disponibile a breve.'
   T_JSON_OFF='Servizio momentaneamente non disponibile, stiamo lavorando per ripristinarlo.'
   T_UNTIL='Ritorno previsto'
+  T_NEXT='Cosa puoi fare'
+  T_TRY_ON='riprova più tardi'
+  T_TRY_UNTIL="riprova dopo l'orario previsto"
+  T_TRY_OFF='riprova tra qualche minuto'
+  T_HELP_ON='se ti serve aiuto,'
+  T_HELP_OFF='se il problema continua,'
+  T_EMAIL='scrivi a'
+  T_PHONE='chiama il'
+  T_OR='o'
   T_RETRY='Riprova'
   T_AUTO='Questa pagina si aggiorna da sola appena il servizio torna disponibile.'
   T_LAST='Ultimo controllo alle {time}.'
   T_BACK='Il servizio è di nuovo disponibile: ricarico la pagina.'
-  T_HELP='Ti serve aiuto?'
-  T_EMAIL='Scrivi a'
-  T_PHONE='Chiama il'
   T_LINK='Altre informazioni'
   T_CODE='Errore 503: servizio non disponibile'
   T_LOGO='Logo'
 else
   T_STATUS_ON='Maintenance in progress'
   T_STATUS_OFF='Service unreachable'
-  T_TITLE="We'll be back shortly"
+  T_TITLE_ON='Sorry, the service is unavailable'
+  T_TITLE_OFF='Sorry, there is a problem with the service'
   T_MESSAGE_ON="We are carrying out maintenance. The service will be available again as soon as we're done: thank you for your patience."
   T_MESSAGE_OFF='The service is not responding right now. We are working to restore it as soon as possible.'
   T_JSON_ON='Service under maintenance, back shortly.'
   T_JSON_OFF='Service temporarily unavailable, we are working to restore it.'
   T_UNTIL='Expected back'
+  T_NEXT='What you can do'
+  T_TRY_ON='try again later'
+  T_TRY_UNTIL='try again after the expected time'
+  T_TRY_OFF='try again in a few minutes'
+  T_HELP_ON='if you need help,'
+  T_HELP_OFF='if the problem persists,'
+  T_EMAIL='write to'
+  T_PHONE='call'
+  T_OR='or'
   T_RETRY='Try again'
   T_AUTO='This page reloads by itself as soon as the service is available again.'
   T_LAST='Last checked at {time}.'
   T_BACK='The service is available again: reloading the page.'
-  T_HELP='Need help?'
-  T_EMAIL='Write to'
-  T_PHONE='Call'
   T_LINK='More information'
   T_CODE='Error 503: service unavailable'
   T_LOGO='Logo'
 fi
-[ -n "$TITLE" ] || TITLE=$T_TITLE
 [ -n "$CONTACT_LABEL" ] || CONTACT_LABEL=$T_LINK
 
 # Two of everything, page and JSON: `on` for maintenance (MAINTENANCE=on, or the switch file), `off` for
@@ -400,17 +415,17 @@ PALETTE
   GW_LANG=$LANG_
   GW_RADIUS=$RADIUS
   GW_FONT=$FONT
-  GW_TITLE=$(esc "$TITLE")
-  if [ -n "$BRAND" ]; then GW_DOC_TITLE="$GW_TITLE · $(esc "$BRAND")"; else GW_DOC_TITLE=$GW_TITLE; fi
+  GW_NEXT=$(esc "$T_NEXT")
   GW_RETRY=$(esc "$T_RETRY")
   GW_AUTO=$(esc "$T_AUTO")
   GW_LAST=$(esc "$T_LAST")
   GW_BACK=$(esc "$T_BACK")
   GW_CODE=$(esc "$T_CODE")
 
+  # The header band: the logo and the name, or nothing (the band is then the stripe alone).
   GW_BRAND=''
   if [ -n "$LOGO" ] || [ -n "$BRAND" ]; then
-    GW_BRAND='<div class="brand">'
+    GW_BRAND='<div class="brand wrap">'
     if [ -n "$LOGO" ]; then
       # The name beside it already says whose logo it is; without one, the image is the only name.
       [ -n "$BRAND" ] && alt='' || alt=$T_LOGO
@@ -422,36 +437,48 @@ PALETTE
 
   GW_UNTIL=''
   if [ -n "$UNTIL_ISO" ]; then
-    GW_UNTIL="<p class=\"until\"><svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/></svg><span><span class=\"until-label\">$(esc "$T_UNTIL")</span> <time datetime=\"$(esc "$UNTIL_ISO")\">$(esc "$UNTIL_TEXT")</time></span></p>"
+    GW_UNTIL="<p class=\"until\">$(esc "$T_UNTIL") <strong><time datetime=\"$(esc "$UNTIL_ISO")\">$(esc "$UNTIL_TEXT")</time></strong>.</p>"
   fi
 
-  GW_CONTACTS=''
-  if [ -n "$EMAIL" ] || [ -n "$PHONE" ] || [ -n "$CONTACT_URL" ]; then
-    items=''
-    if [ -n "$EMAIL" ]; then
-      items="$items<li><a class=\"btn\" href=\"mailto:$(esc "$EMAIL")\"><svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m4 7 8 6 8-6\"/></svg><span class=\"sr-only\">$(esc "$T_EMAIL") </span>$(esc "$EMAIL")</a></li>"
-    fi
-    if [ -n "$PHONE" ]; then
-      tel=$(printf '%s' "$PHONE" | tr -cd '+0-9')
-      items="$items<li><a class=\"btn\" href=\"tel:$tel\"><svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2\"/></svg><span class=\"sr-only\">$(esc "$T_PHONE") </span>$(esc "$PHONE")</a></li>"
-    fi
-    if [ -n "$CONTACT_URL" ]; then
-      items="$items<li><a class=\"btn\" href=\"$(esc "$CONTACT_URL")\" rel=\"noopener\"><svg class=\"icon\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5\"/></svg>$(esc "$CONTACT_LABEL")</a></li>"
-    fi
-    GW_CONTACTS="<section class=\"contacts\" aria-labelledby=\"gw-help\"><h2 id=\"gw-help\">$(esc "$T_HELP")</h2><ul>$items</ul></section>"
+  # The ways to ask for help, one sentence: «scrivi a X o chiama il Y». The page's link is a step of its own.
+  REACH=''
+  if [ -n "$EMAIL" ]; then
+    REACH="$(esc "$T_EMAIL") <a href=\"mailto:$(esc "$EMAIL")\">$(esc "$EMAIL")</a>"
   fi
+  if [ -n "$PHONE" ]; then
+    tel=$(printf '%s' "$PHONE" | tr -cd '+0-9')
+    REACH="${REACH:+$REACH $(esc "$T_OR") }$(esc "$T_PHONE") <a href=\"tel:$tel\">$(esc "$PHONE")</a>"
+  fi
+  LINK_STEP=''
+  [ -z "$CONTACT_URL" ] || LINK_STEP="<li><a href=\"$(esc "$CONTACT_URL")\" rel=\"noopener\">$(esc "$CONTACT_LABEL")</a></li>"
 
-  export GW_LANG GW_RADIUS GW_FONT GW_TITLE GW_DOC_TITLE \
-    GW_RETRY GW_AUTO GW_LAST GW_BACK GW_CODE GW_BRAND GW_UNTIL GW_CONTACTS
+  export GW_LANG GW_RADIUS GW_FONT GW_NEXT GW_RETRY GW_AUTO GW_LAST GW_BACK GW_CODE GW_BRAND GW_UNTIL
 
   # Each @@NAME@@ in the template becomes GW_NAME, in one pass: what a value contains is never read
   # again, so a value holding @@TITLE@@ stays text. A name the script does not export stops the start.
   for m in on off; do
-    if [ "$m" = on ]; then GW_STATUS=$(esc "$T_STATUS_ON"); GW_TONE=caution; text=${MESSAGE:-$T_MESSAGE_ON}
-    else GW_STATUS=$(esc "$T_STATUS_OFF"); GW_TONE=negative; text=${MESSAGE:-$T_MESSAGE_OFF}; fi
+    # What differs between the states: the words, the tone and mark of the status line, and the steps.
+    # A step is there only for what the variables give: «try again» always, help only with a contact.
+    if [ "$m" = on ]; then
+      status=$T_STATUS_ON; GW_TONE=caution; title=${TITLE:-$T_TITLE_ON}; text=${MESSAGE:-$T_MESSAGE_ON}; help=$T_HELP_ON
+      [ -n "$UNTIL_ISO" ] && try=$T_TRY_UNTIL || try=$T_TRY_ON
+      # A wrench: work being done.
+      GW_MARK='<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+    else
+      status=$T_STATUS_OFF; GW_TONE=negative; title=${TITLE:-$T_TITLE_OFF}; text=${MESSAGE:-$T_MESSAGE_OFF}; help=$T_HELP_OFF
+      try=$T_TRY_OFF
+      # An exclamation mark in a circle: something is wrong.
+      GW_MARK='<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.5h.01"/></svg>'
+    fi
+    GW_STATUS=$(esc "$status")
+    GW_TITLE=$(esc "$title")
+    if [ -n "$BRAND" ]; then GW_DOC_TITLE="$GW_TITLE · $(esc "$BRAND")"; else GW_DOC_TITLE=$GW_TITLE; fi
+    GW_STEPS="<li>$(esc "$try")</li>"
+    [ -z "$REACH" ] || GW_STEPS="$GW_STEPS<li>$(esc "$help") $REACH</li>"
+    GW_STEPS="$GW_STEPS$LINK_STEP"
     # A blank line starts a new paragraph, a single new line is a line break.
     GW_MESSAGE=$(esc "$text" | awk 'BEGIN { RS = "" } { gsub(/[ \t]*\n[ \t]*/, "<br>"); sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); printf "<p>%s</p>\n", $0 }')
-    export GW_STATUS GW_TONE GW_MESSAGE
+    export GW_STATUS GW_TONE GW_MARK GW_TITLE GW_DOC_TITLE GW_STEPS GW_MESSAGE
     awk '
       {
         out = ""; line = $0

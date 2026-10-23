@@ -7,9 +7,10 @@
 <meta name="robots" content="noindex">
 <title>@@DOC_TITLE@@</title>
 <style>
-/* The maintenance page (README.md, «La pagina»), drawn as a screen of the template's frontend: its
-   NotFoundView and AuthLayout (a centred column on the page background, no card), its Button and Badge.
-   gateway.sh fills every placeholder at start, escaped or picked from a fixed list.
+/* The maintenance page (README.md, «La pagina»), in the style of a public service's error page: GOV.UK's
+   «Sorry, the service is unavailable» and the header of Designers Italia / Bootstrap Italia. A header band
+   with the name, then one left-aligned column: the state, a plain title, the message, a list of what the
+   visitor can do, «Riprova». gateway.sh fills every placeholder at start, escaped or picked from a fixed list.
 
    THE TOKENS. Everything below the two blocks reads these and nothing else: no colour, size, radius or
    font is written anywhere else in this file. The colours carry the frontend's names
@@ -22,11 +23,10 @@
   --color-foreground: @@L_FOREGROUND@@;
   --color-heading: @@L_HEADING@@;
   --color-card: @@L_CARD@@;
-  --color-accent: @@L_ACCENT@@;
   --color-muted-foreground: @@L_MUTED_FOREGROUND@@;
   --color-border: @@L_BORDER@@;
-  --color-control: @@L_CONTROL@@;
   --color-ring: @@L_RING@@;
+  --color-link: @@L_LINK@@;
   --color-primary: @@L_PRIMARY@@;
   --color-primary-foreground: @@L_PRIMARY_FOREGROUND@@;
   --color-primary-edge: @@L_PRIMARY_EDGE@@;
@@ -44,32 +44,43 @@
   --radius-lg: calc(var(--radius) * 1.5);
   --font-sans: @@FONT@@;
 
-  /* Tailwind's steps, as the frontend's classes use them: text-xs, text-sm, text-2xl, gap-2... */
-  --text-xs: 0.75rem;
-  --text-xs-line: 1rem;
+  /* The type: a reading size larger than an app screen's, as a public service page has it. */
   --text-sm: 0.875rem;
   --text-sm-line: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-2xl-line: 2rem;
-  --tracking-tight: -0.025em;
+  --text-base: 1rem;
+  --text-body: 1.125rem;
+  --text-body-line: 1.6;
+  --text-name: 1.125rem;
+  --text-h2: 1.25rem;
+  --text-h2-line: 1.4;
+  --text-h1: 2.25rem;
+  --text-h1-line: 1.15;
+  --tracking-tight: -0.02em;
+  --tracking-name: -0.01em;
   --weight-medium: 500;
-  --weight-semibold: 600;
   --weight-bold: 700;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
-  --column: 28rem;
+  --space-12: 3rem;
+  --column: 44rem;
+  --title-column: 32rem;
   --icon: 1rem;
+  --mark: 1.5rem;
   --logo: 2.25rem;
-  /* A button is h-9 in the frontend; on a narrow screen it grows to a 44 px touch target. */
-  --control-height: 2.25rem;
+  --stripe: 4px;
+  /* One control, 44 px tall everywhere: a touch target on a phone, and the size GOV.UK gives its button. */
+  --control-height: 2.75rem;
+  --control-padding: 0.625rem;
+  --control-shadow: 0 2px 0;
   --ring-width: 3px;
   --underline-offset: 0.2em;
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --duration: 200ms;
+  --underline: 1px;
+  --underline-hover: 3px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -77,11 +88,10 @@
     --color-foreground: @@D_FOREGROUND@@;
     --color-heading: @@D_HEADING@@;
     --color-card: @@D_CARD@@;
-    --color-accent: @@D_ACCENT@@;
     --color-muted-foreground: @@D_MUTED_FOREGROUND@@;
     --color-border: @@D_BORDER@@;
-    --color-control: @@D_CONTROL@@;
     --color-ring: @@D_RING@@;
+    --color-link: @@D_LINK@@;
     --color-primary: @@D_PRIMARY@@;
     --color-primary-foreground: @@D_PRIMARY_FOREGROUND@@;
     --color-primary-edge: @@D_PRIMARY_EDGE@@;
@@ -94,7 +104,11 @@
   }
 }
 @media (max-width: 34rem) {
-  :root { --control-height: 2.75rem; }
+  :root {
+    --text-body: 1rem;
+    --text-h1: 1.75rem;
+    --space-12: 2rem;
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; border: 0 solid var(--color-border); }
@@ -109,86 +123,68 @@ body {
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-}
-/* margin: auto rather than centring on the parent, as AuthLayout: a column taller than the window
-   stays reachable from its top. */
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  width: 100%;
-  max-width: var(--column);
-  margin: auto;
-  padding: var(--space-8) var(--space-4);
-  text-align: center;
   overflow-wrap: anywhere;
 }
+/* The header band: the name on the card colour, over a stripe of the primary colour. With no name and
+   no logo it is the stripe alone. */
+.head { border-bottom: var(--stripe) solid var(--color-primary-edge); background: var(--color-card); }
+.wrap { width: 100%; max-width: var(--column); margin: 0 auto; padding-left: var(--space-5); padding-right: var(--space-5); }
 .brand {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-line);
-  font-weight: var(--weight-semibold);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+  color: var(--color-heading);
+  font-size: var(--text-name);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-name);
 }
 .brand img { display: block; height: var(--logo); width: auto; max-width: calc(var(--logo) * 5); object-fit: contain; }
-/* Badge, in the status tone: caution while maintenance is on, negative when the app is down. */
-.badge {
-  display: inline-flex;
+main { flex: 1; padding-top: var(--space-12); padding-bottom: var(--space-12); }
+/* The state, above the title: its mark in the status tone (caution for maintenance, negative when the
+   app is down), on the tone's own surface; the words in the secondary ink. */
+.status {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: calc(var(--space-1) / 2) var(--space-2);
+  margin-bottom: var(--space-1);
+  color: var(--color-muted-foreground);
+  font-size: var(--text-base);
+}
+.mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--mark);
+  height: var(--mark);
   border-width: 1px;
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  line-height: var(--text-xs-line);
-  font-weight: var(--weight-medium);
-}
-.badge-caution { border-color: var(--color-caution-border); background: var(--color-caution-surface); color: var(--color-caution); }
-.badge-negative { border-color: var(--color-negative-border); background: var(--color-negative-surface); color: var(--color-negative); }
-.dot { position: relative; width: var(--space-2); height: var(--space-2); border-radius: 50%; background: currentColor; }
-.dot::after {
-  content: "";
-  position: absolute;
-  inset: calc(var(--space-1) * -1);
   border-radius: 50%;
-  border: 2px solid currentColor;
-  opacity: 0;
-  animation: ping 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
-@keyframes ping {
-  0% { transform: scale(0.6); opacity: 0.7; }
-  80%, 100% { transform: scale(1.6); opacity: 0; }
-}
+.status-caution .mark { border-color: var(--color-caution-border); background: var(--color-caution-surface); color: var(--color-caution); }
+.status-negative .mark { border-color: var(--color-negative-border); background: var(--color-negative-surface); color: var(--color-negative); }
+h1, h2 { color: var(--color-heading); font-weight: var(--weight-bold); }
 h1 {
-  color: var(--color-heading);
-  font-size: var(--text-2xl);
-  line-height: var(--text-2xl-line);
-  font-weight: var(--weight-bold);
+  max-width: var(--title-column);
+  margin-bottom: var(--space-6);
+  font-size: var(--text-h1);
+  line-height: var(--text-h1-line);
   letter-spacing: var(--tracking-tight);
   text-wrap: balance;
 }
-.message, .auto, .meta, .until-label { color: var(--color-muted-foreground); }
-.message { font-size: var(--text-sm); line-height: var(--text-sm-line); }
-.message p + p { margin-top: var(--space-3); }
-.until {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-width: 1px;
-  border-radius: var(--radius-lg);
-  background: var(--color-card);
-  font-size: var(--text-sm);
-  line-height: var(--text-sm-line);
-  text-align: left;
+h2 { margin: var(--space-8) 0 var(--space-3); font-size: var(--text-h2); line-height: var(--text-h2-line); }
+main p, main li { font-size: var(--text-body); line-height: var(--text-body-line); }
+.message p + p, .until { margin-top: var(--space-4); }
+.until time { font-variant-numeric: tabular-nums; }
+.next { display: grid; gap: var(--space-2); padding-left: var(--space-5); }
+main a:not(.btn) {
+  color: var(--color-link);
+  font-weight: var(--weight-medium);
+  text-decoration-thickness: var(--underline);
+  text-underline-offset: var(--underline-offset);
 }
-.until-label { display: block; font-size: var(--text-xs); line-height: var(--text-xs-line); }
-.until time { display: block; font-weight: var(--weight-medium); font-variant-numeric: tabular-nums; }
-.actions { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin-top: var(--space-2); }
-.auto, .meta { font-size: var(--text-xs); line-height: var(--text-xs-line); }
+main a:not(.btn):hover { text-decoration-thickness: var(--underline-hover); }
+a:focus-visible { outline: var(--ring-width) solid var(--color-ring); outline-offset: 2px; border-radius: var(--radius-sm); }
 .icon {
   flex: none;
   width: var(--icon);
@@ -199,34 +195,30 @@ h1 {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-/* Button: .btn is the outline variant, .btn-primary the default one. */
+/* The one button, the primary colour with a darker lip under it, as GOV.UK draws its own. */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   min-height: var(--control-height);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--color-control);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  box-shadow: var(--shadow-xs);
-  color: var(--color-foreground);
+  margin-top: var(--space-8);
+  padding: var(--control-padding) var(--space-5);
+  border: 1px solid var(--color-primary-edge);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  box-shadow: var(--control-shadow) var(--color-heading);
+  color: var(--color-primary-foreground);
   font: inherit;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   line-height: var(--text-sm-line);
   font-weight: var(--weight-medium);
   text-decoration: none;
-  transition: background-color var(--duration) ease-out;
 }
-.btn:hover { background: var(--color-accent); }
-.btn-primary { border-color: var(--color-primary-edge); background: var(--color-primary); color: var(--color-primary-foreground); }
-.btn-primary:hover { background: var(--color-primary); text-decoration: underline; text-underline-offset: var(--underline-offset); }
-.btn:focus-visible { outline: var(--ring-width) solid var(--color-ring); outline-offset: 2px; }
-.contacts { width: 100%; margin-top: var(--space-4); padding-top: var(--space-6); border-top-width: 1px; }
-.contacts h2 { margin-bottom: var(--space-3); font-size: var(--text-sm); line-height: var(--text-sm-line); font-weight: var(--weight-semibold); }
-.contacts ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); padding: 0; list-style: none; }
-.meta { padding: 0 var(--space-4) var(--space-6); text-align: center; }
+.btn:hover { text-decoration: underline; text-underline-offset: var(--underline-offset); }
+main .auto { margin-top: var(--space-3); color: var(--color-muted-foreground); font-size: var(--text-sm); line-height: var(--text-sm-line); }
+.foot { border-top-width: 1px; background: var(--color-card); }
+.foot p { padding-top: var(--space-5); padding-bottom: var(--space-6); color: var(--color-muted-foreground); font-size: var(--text-sm); line-height: var(--text-sm-line); }
 .sr-only {
   position: absolute;
   width: 1px;
@@ -239,36 +231,35 @@ h1 {
   border: 0;
 }
 @media (max-width: 34rem) {
-  .actions { align-self: stretch; }
-  .contacts ul { flex-direction: column; }
   .btn { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 @media (forced-colors: active) {
-  .btn, .badge { border-color: ButtonText; }
-  .dot { background: CanvasText; }
+  .head { border-bottom-color: CanvasText; }
+  .btn, .mark { border-color: ButtonText; }
 }
 </style>
 </head>
 <body>
-<main>
-@@BRAND@@
-<p class="badge badge-@@TONE@@ status"><span class="dot" aria-hidden="true"></span>@@STATUS@@</p>
+<header class="head">@@BRAND@@</header>
+<main class="wrap">
+<p class="status status-@@TONE@@"><span class="mark" aria-hidden="true">@@MARK@@</span>@@STATUS@@</p>
 <h1>@@TITLE@@</h1>
 <div class="message">
 @@MESSAGE@@
 </div>
 @@UNTIL@@
-<div class="actions">
-<a class="btn btn-primary" href="" id="gw-retry"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>@@RETRY@@</a>
+<h2>@@NEXT@@</h2>
+<ul class="next">
+@@STEPS@@
+</ul>
+<a class="btn" href="" id="gw-retry"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>@@RETRY@@</a>
 <p class="auto" id="gw-auto" hidden>@@AUTO@@ <span id="gw-last" data-text="@@LAST@@"></span></p>
-</div>
 <p class="sr-only" id="gw-live" role="status" data-text="@@BACK@@"></p>
-@@CONTACTS@@
 </main>
-<footer class="meta">@@CODE@@</footer>
+<footer class="foot"><p class="wrap">@@CODE@@</p></footer>
 <script>
 // While this page is open, ask the same address every now and then (10 s, growing to a minute, and
 // never while the tab is hidden). The gateway's page carries X-Gateway: maintenance and the app does

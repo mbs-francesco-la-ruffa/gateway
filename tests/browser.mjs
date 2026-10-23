@@ -109,10 +109,10 @@ await block('a hidden tab', async () => {
   const focused = await tab.evaluate(() => {
     const el = document.activeElement
     const s = getComputedStyle(el)
-    return { id: el.id, style: s.outlineStyle, width: s.outlineWidth }
+    return { href: el.getAttribute('href'), style: s.outlineStyle, width: s.outlineWidth }
   })
-  check('the first Tab lands on «Riprova», with a visible 3 px focus ring',
-    focused.id === 'gw-retry' && focused.style === 'solid' && focused.width === '3px', JSON.stringify(focused))
+  check('the first Tab lands on the first link of the steps, with a visible 3 px focus ring',
+    focused.href === 'mailto:assistenza@example.it' && focused.style === 'solid' && focused.width === '3px', JSON.stringify(focused))
   check('a logo that does not load is removed, not drawn broken', !(await tab.$('.brand img')))
   check('  and the name is still there', (await tab.textContent('.brand')) === 'Regione Esempio')
   const external = await tab.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name))
@@ -133,15 +133,36 @@ for (const name of ['bare', 'full', 'evil', 'english']) {
 }
 
 {
-  const ping = async (motion) => {
-    const { context, tab } = await open(page('bare'), { motion })
-    const name = await tab.evaluate(() => getComputedStyle(document.querySelector('.dot'), '::after').animationName)
-    await context.close()
-    return name
-  }
-  const moving = await ping('no-preference')
-  const still = await ping('reduce')
-  check('the status dot pulses, and stops when the system asks for reduced motion', moving === 'ping' && still === 'none', `${moving} / ${still}`)
+  const { context, tab } = await open(page('bare'))
+  await tab.keyboard.press('Tab')
+  const focused = await tab.evaluate(() => {
+    const s = getComputedStyle(document.activeElement)
+    return { id: document.activeElement.id, style: s.outlineStyle, width: s.outlineWidth }
+  })
+  check('with no contacts, the first Tab lands on «Riprova», with a visible 3 px focus ring',
+    focused.id === 'gw-retry' && focused.style === 'solid' && focused.width === '3px', JSON.stringify(focused))
+  await context.close()
+}
+
+// --- The layout of a public service's page: one column aligned on the left, under a band with a stripe.
+for (const [name, width] of [['full', 1280], ['full', 390], ['unreachable', 1280]]) {
+  const { context, tab } = await open(page(name), { width, logo: 'serve' })
+  const shape = await tab.evaluate(() => {
+    const left = (selector) => Math.round(document.querySelector(selector).getBoundingClientRect().left)
+    const head = getComputedStyle(document.querySelector('.head'))
+    return {
+      lefts: ['.brand-name', '.status', 'h1', '.message p', 'h2', '#gw-retry'].map(left),
+      bullets: getComputedStyle(document.querySelector('.next')).listStyleType,
+      stripe: head.borderBottomWidth,
+      align: getComputedStyle(document.querySelector('main')).textAlign,
+    }
+  })
+  // The logo stands before the name: the band starts where the column starts, the name after the logo.
+  const [brand, ...column] = shape.lefts
+  check(`${name}, ${width} px: the column is aligned on the left, the steps are a bulleted list, the band has its 4 px stripe`,
+    column.every((x) => x === column[0]) && brand > column[0] && shape.bullets === 'disc' && shape.stripe === '4px' &&
+      ['start', 'left'].includes(shape.align), JSON.stringify(shape))
+  await context.close()
 }
 
 {
@@ -170,6 +191,9 @@ if (process.env.SHOTS) {
     ['own', 'desktop', 1280, 900],
     ['own', 'phone', 390, 844],
     ['unreachable', 'desktop', 1280, 900],
+    ['unreachable', 'phone', 390, 844],
+    ['unreachable-bare', 'desktop', 1280, 900],
+    ['unreachable-bare', 'phone', 390, 844],
   ]
   for (const [name, device, width, height] of shots) {
     for (const scheme of ['light', 'dark']) {

@@ -234,16 +234,18 @@ fi
 
 echo "${BOLD}the page with no variables${OFF}"
 if page bare; then
-  check "Italian, default texts, only «Riprova», no logo, no expected time, contrast AA" page_is '{
-    "lang": "it", "title": "Torniamo tra poco", "h1": "Torniamo tra poco", "status": "Manutenzione in corso",
-    "texts": ["Stiamo facendo un intervento di manutenzione.", "Riprova", "Errore 503"],
-    "absent": ["Ritorno previsto", "Ti serve aiuto?"],
+  check "Italian, default texts, one step, only «Riprova», no logo, no expected time, contrast AA" page_is '{
+    "lang": "it", "title": "Ci dispiace, il servizio non è disponibile", "h1": "Ci dispiace, il servizio non è disponibile",
+    "status": "Manutenzione in corso",
+    "texts": ["Stiamo facendo un intervento di manutenzione.", "Cosa puoi fare", "Riprova", "Errore 503"],
+    "steps": ["riprova più tardi"], "absent": ["Ritorno previsto", "aiuto"],
     "hrefs": [""], "img": null, "until": null, "contrast": true}'
   check "  the frontend's neutral theme: its primary, background, radius and font" page_is '{
     "tokens": {"color-primary": ["#504ec6", "#f8fafc"], "color-background": ["#f3f6f9", "#020817"],
       "color-foreground": ["#020817", "#f8fafc"], "color-primary-foreground": ["#ffffff", "#020817"]},
     "radius": "0.5rem", "font": "-apple-system"}'
-  check "  the status is a caution badge" body_has 'class="badge badge-caution status"'
+  check "  the status carries the caution tone" body_has 'class="status status-caution"'
+  check "  no name and no logo: the header is the stripe alone" body_has '<header class="head"></header>'
   check "  the JSON has the default message" is "$(jq -r .message "$TMP/j")" "Servizio in manutenzione, torna disponibile a breve."
 fi
 
@@ -261,10 +263,11 @@ if page full -e MAINTENANCE_TITLE='Aggiornamento del portale' \
     "lang": "it", "title": "Aggiornamento del portale · Regione Esempio", "h1": "Aggiornamento del portale",
     "status": "Manutenzione in corso",
     "texts": ["Regione Esempio", "Stiamo installando la nuova versione. I dati sono al sicuro.", "Grazie per la pazienza.",
-      "Ritorno previsto", "'"$LAST_DAY_NAME"' 31 dicembre, alle 18:05", "Ti serve aiuto?", "Scrivi a assistenza@example.it",
-      "Chiama il +39 06 1234.5678", "Stato del servizio"],
+      "Ritorno previsto", "'"$LAST_DAY_NAME"' 31 dicembre, alle 18:05"],
+    "steps": ["riprova dopo l'"'"'orario previsto",
+      "se ti serve aiuto, scrivi a assistenza@example.it o chiama il +39 06 1234.5678", "Stato del servizio"],
     "absent": ["Altre informazioni", "'"$YEAR"'"],
-    "hrefs": ["", "mailto:assistenza@example.it", "tel:+390612345678", "https://stato.example.it/?da=manutenzione&lingua=it"],
+    "hrefs": ["mailto:assistenza@example.it", "tel:+390612345678", "https://stato.example.it/?da=manutenzione&lingua=it", ""],
     "img": "https://cdn.example.it/logo.svg", "until": "'"$YEAR"'-12-31T18:05", "contrast": true}'
   check "  the message keeps its paragraphs and line breaks" body_has '<p>Stiamo installando la nuova versione.<br>I dati sono al sicuro.</p>'
   check "  the colour, lower case, primary in both themes" page_is '{"tokens": {"color-primary": ["#0b6e4f", "#0b6e4f"]}}'
@@ -286,7 +289,7 @@ if page evil -e MAINTENANCE_TITLE="$EVIL_TITLE" -e MAINTENANCE_BRAND="$EVIL_BRAN
     --arg t "$EVIL_TITLE" --arg b "$EVIL_BRAND" --arg l "$EVIL_LABEL" '{
       h1: $t, title: ($t + " · " + $b),
       texts: [$b, "</p></div><script>alert(\"x\")</script>", "<a href=\"javascript:alert(1)\">clic</a> ${PORT} `date` %s", $l],
-      hrefs: ["", "https://example.it/a?b=1&c=2"], img: "https://example.it/l.png?x=1&y=2"}')"
+      hrefs: ["https://example.it/a?b=1&c=2", ""], img: "https://example.it/l.png?x=1&y=2"}')"
   check "  the raw page holds no quote, angle bracket or apostrophe from a value" bash -c \
     "! grep -qF -e '\"Ciao\"' -e \"'tutti'\" -e '<b>' -e '<svg onload' -e '<img src=x' -e '\"Co\"' '$TMP/b'"
   check "  an ampersand in an address is written &amp;" body_has 'href="https://example.it/a?b=1&amp;c=2"'
@@ -294,12 +297,13 @@ if page evil -e MAINTENANCE_TITLE="$EVIL_TITLE" -e MAINTENANCE_BRAND="$EVIL_BRAN
 fi
 
 echo "${BOLD}the page in English, the expected time a time alone${OFF}"
-if page english -e MAINTENANCE_LANG=en -e MAINTENANCE_UNTIL='9:30' -e MAINTENANCE_CONTACT_URL='https://help.example.com'; then
-  check "English texts, «at 09:30», the link's default label" page_is '{
-    "lang": "en", "h1": "We'"'"'ll be back shortly", "status": "Maintenance in progress",
-    "texts": ["We are carrying out maintenance.", "Try again", "Expected back", "at 09:30", "Need help?", "More information",
-      "Error 503"],
-    "absent": ["Riprova", "alle"], "hrefs": ["", "https://help.example.com"], "until": "09:30", "contrast": true}'
+if page english -e MAINTENANCE_LANG=en -e MAINTENANCE_UNTIL='9:30' -e MAINTENANCE_CONTACT_URL='https://help.example.com' \
+  -e MAINTENANCE_CONTACT_PHONE='+44 20 7946 0000'; then
+  check "English texts, «at 09:30», a phone alone, the link's default label" page_is '{
+    "lang": "en", "h1": "Sorry, the service is unavailable", "status": "Maintenance in progress",
+    "texts": ["We are carrying out maintenance.", "What you can do", "Try again", "Expected back", "at 09:30", "Error 503"],
+    "steps": ["try again after the expected time", "if you need help, call +44 20 7946 0000", "More information"],
+    "absent": ["Riprova", "alle"], "hrefs": ["tel:+442079460000", "https://help.example.com", ""], "until": "09:30", "contrast": true}'
   check "  the JSON in English, with until" is "$(jq -c . "$TMP/j")" '{"message":"Service under maintenance, back shortly.","until":"09:30"}'
 fi
 if page english-date -e MAINTENANCE_LANG=en -e MAINTENANCE_UNTIL='2031-01-07 08:00'; then
@@ -309,7 +313,7 @@ if page leap -e MAINTENANCE_UNTIL='2028-02-29 23:59'; then
   check "29 February of a leap year, in Italian" page_is '{"texts": ["martedì 29 febbraio 2028, alle 23:59"], "until": "2028-02-29T23:59"}'
 fi
 if page blank -e MAINTENANCE_MESSAGE=$'  \n\n ' -e MAINTENANCE_TITLE=' ' -e MAINTENANCE_UNTIL=''; then
-  check "blank values count as unset" page_is '{"h1": "Torniamo tra poco", "texts": ["Stiamo facendo un intervento"], "until": null}'
+  check "blank values count as unset" page_is '{"h1": "Ci dispiace, il servizio non è disponibile", "texts": ["Stiamo facendo un intervento"], "until": null}'
   check "  in the JSON too" is "$(jq -r .message "$TMP/j")" "Servizio in manutenzione, torna disponibile a breve."
 fi
 
@@ -348,18 +352,34 @@ for colour in '#ffff00' '#777777' '#000000' '#ffffff' '#0000ff' '#e11d48' '#fc0'
 done
 
 echo "${BOLD}maintenance off, upstream b stopped${OFF}"
-if start_gateway -e ROUTES="$ROUTES_AB" -e MAINTENANCE_UNTIL='18:00'; then
+if start_gateway -e ROUTES="$ROUTES_AB" -e MAINTENANCE_UNTIL='18:00' -e MAINTENANCE_BRAND='Regione Esempio' \
+  -e MAINTENANCE_LOGO_URL='https://cdn.example.it/logo.svg' -e MAINTENANCE_COLOR='#0B6E4F' \
+  -e MAINTENANCE_CONTACT_EMAIL='assistenza@example.it' -e MAINTENANCE_CONTACT_PHONE='+39 06 1234.5678' \
+  -e MAINTENANCE_CONTACT_URL='https://stato.example.it' -e MAINTENANCE_CONTACT_URL_LABEL='Stato del servizio'; then
   docker stop -t 1 "$RUN-b" >/dev/null
   req b.test "$BASE/anything"
   check "b.test: 503 with the page, no bare 502" is "$CODE/$(grep -ci '^x-gateway: maintenance' "$TMP/h")" "503/1"
-  check "  saying the service is unreachable, not under maintenance" page_is '{"status": "Servizio non raggiungibile",
-    "texts": ["In questo momento il servizio non risponde."], "absent": ["Manutenzione in corso"], "until": "18:00"}'
-  check "  in a negative badge" body_has 'class="badge badge-negative status"'
+  check "  saying something is wrong with the service, not that it is under maintenance" page_is '{
+    "title": "Ci dispiace, c'"'"'è un problema con il servizio · Regione Esempio",
+    "h1": "Ci dispiace, c'"'"'è un problema con il servizio", "status": "Servizio non raggiungibile",
+    "texts": ["In questo momento il servizio non risponde."], "absent": ["Manutenzione in corso"], "until": "18:00",
+    "steps": ["riprova tra qualche minuto", "se il problema continua, scrivi a assistenza@example.it o chiama il +39 06 1234.5678",
+      "Stato del servizio"], "contrast": true}'
+  check "  in the negative tone" body_has 'class="status status-negative"'
   cp "$TMP/b" "$TMP/pages/unreachable.html"
   req b.test "$BASE/api/x"
   check "b.test/api/x: 503 in JSON" is "$CODE/$(grep -ci '^content-type: application/json' "$TMP/h")" "503/1"
   req a.test "$BASE/x"
   check "a.test is untouched" is "$CODE/$(jq -r .upstream "$TMP/b")" "200/a"
+  docker start "$RUN-b" >/dev/null
+fi
+if start_gateway -e ROUTES="$ROUTES_AB"; then
+  docker stop -t 1 "$RUN-b" >/dev/null
+  req b.test "$BASE/anything"
+  check "unreachable with no variables: its own title, one step, no expected time" page_is '{
+    "h1": "Ci dispiace, c'"'"'è un problema con il servizio", "status": "Servizio non raggiungibile",
+    "steps": ["riprova tra qualche minuto"], "until": null, "hrefs": [""], "contrast": true}'
+  cp "$TMP/b" "$TMP/pages/unreachable-bare.html"
   docker start "$RUN-b" >/dev/null
 fi
 

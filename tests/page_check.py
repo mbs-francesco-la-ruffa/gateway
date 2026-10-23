@@ -4,6 +4,7 @@
 
 Expectations, every key optional:
   lang, title, h1, status        exact text (HTML entities decoded)
+  steps                          the exact list of «what you can do», each item's text in order
   texts / absent                 phrases that must / must not appear in the visible text
   hrefs                          the exact list of link targets, in order
   img                            the logo's src, or null for no image
@@ -14,8 +15,8 @@ Expectations, every key optional:
 
 Always checked as well: below the token blocks the style writes no colour, length or font of its own.
 
-Always checked: one <main>, one <h1>, one <script> (the page's own), no tag beyond the ones the template
-uses, every id unique, every aria-labelledby pointing at an id, the only event handler the logo's.
+Always checked: one <header>, <main>, <h1> and <h2>, one <script> (the page's own), no tag beyond the
+ones the template uses, every id unique, every aria-labelledby pointing at an id, the only event handler the logo's.
 Prints one line per failure and exits 1 if any.
 """
 import json
@@ -24,8 +25,8 @@ import sys
 from html.parser import HTMLParser
 
 ALLOWED_TAGS = {
-    "html", "head", "meta", "title", "style", "body", "main", "div", "p", "span", "h1", "h2", "a", "svg",
-    "path", "circle", "rect", "img", "time", "section", "ul", "li", "footer", "script", "br",
+    "html", "head", "meta", "title", "style", "body", "header", "main", "div", "p", "span", "h1", "h2", "a",
+    "svg", "path", "circle", "img", "time", "strong", "ul", "li", "footer", "script", "br",
 }
 VOID = {"meta", "img", "br"}
 
@@ -36,6 +37,7 @@ class Page(HTMLParser):
         self.tags = []  # (tag, attrs dict)
         self.stack = []
         self.text = {}  # tag id -> text, for title/h1/status
+        self.items = []  # the text of every <li>, in order
         self.visible = []
         self.style = ""
         self.in_style = self.in_script = self.in_title = False
@@ -59,6 +61,8 @@ class Page(HTMLParser):
             key = t if t in ("title", "h1") else ("status" if "status" in a.get("class", "").split() else None)
             if key and key not in self.text:
                 self.text[key] = re.sub(r"\s+", " ", chunk)
+            if t == "li":
+                self.items.append(re.sub(r"\s+", " ", chunk))
             if t == tag:
                 break
         if tag == "style":
@@ -110,16 +114,15 @@ def themes(style):
 
 
 # (foreground, background, minimum), on the frontend's token names: text asks 4.5 (WCAG 1.4.3 AA), a
-# control's edge or the focus ring 3 (1.4.11). The badge's ink sits on its own surface, the hover fill
-# under the ink, the expected time on the card.
+# control's edge or the focus ring 3 (1.4.11). The name sits on the header's card, the code on the
+# footer's; the status mark draws the tone's ink on the tone's own surface; the links are text.
 PAIRS = [
     ("color-foreground", "color-background", 4.5), ("color-foreground", "color-card", 4.5),
-    ("color-foreground", "color-accent", 4.5), ("color-heading", "color-background", 4.5),
+    ("color-heading", "color-background", 4.5), ("color-heading", "color-card", 4.5),
     ("color-muted-foreground", "color-background", 4.5), ("color-muted-foreground", "color-card", 4.5),
-    ("color-primary-foreground", "color-primary", 4.5),
+    ("color-link", "color-background", 4.5), ("color-primary-foreground", "color-primary", 4.5),
     ("color-caution", "color-caution-surface", 4.5), ("color-negative", "color-negative-surface", 4.5),
-    ("color-control", "color-background", 3), ("color-primary-edge", "color-background", 3),
-    ("color-ring", "color-background", 3),
+    ("color-primary-edge", "color-background", 3), ("color-ring", "color-background", 3),
 ]
 
 
@@ -164,7 +167,7 @@ def main():
         if names.count(tag) != 1:
             failures.append(f"{names.count(tag)} <{tag}>, expected one")
 
-    for tag in ("main", "h1", "script", "title", "html"):
+    for tag in ("header", "main", "h1", "h2", "script", "title", "html"):
         one(tag)
     stray = sorted(set(names) - ALLOWED_TAGS)
     if stray:
@@ -186,6 +189,8 @@ def main():
     for key in ("title", "h1", "status"):
         if key in expect and page.text.get(key) != expect[key]:
             failures.append(f"{key} is {page.text.get(key)!r}, expected {expect[key]!r}")
+    if "steps" in expect and page.items != expect["steps"]:
+        failures.append(f"the steps are {page.items}, expected {expect['steps']}")
     for phrase in expect.get("texts", []):
         if phrase not in visible:
             failures.append(f"missing text: {phrase!r}")

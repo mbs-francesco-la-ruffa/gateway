@@ -44,7 +44,7 @@ farlo a mano: vedi il suo `docs/maintenance.md`.
 
 ### Progetto nuovo, o dominio generato `*.up.railway.app`
 
-1. Nel canvas del progetto: **+ Create** → **Docker Image** → `ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0`. Chiama il
+1. Nel canvas del progetto: **+ Create** → **Docker Image** → `ghcr.io/mbs-francesco-la-ruffa/gateway:1.2.0`. Chiama il
    servizio `gateway`.
 2. **Variables** (Raw Editor), per esempio con un'app sola:
    ```
@@ -70,7 +70,7 @@ Se sposti un dominio personalizzato su un altro servizio, Railway chiede un reco
 del cliente. Per non toccarlo, il dominio resta dov'è e **il servizio che lo possiede diventa il gateway**,
 mentre l'app passa in un servizio nuovo, duplicato di quello vecchio (una sola build). Il procedimento
 passo per passo, con il sito sempre su, è nel template, `docs/maintenance.md`, «Putting a gateway in
-front of a project already on Railway»: dove dice «Connect Image», usa `ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0` e
+front of a project already on Railway»: dove dice «Connect Image», usa `ghcr.io/mbs-francesco-la-ruffa/gateway:1.2.0` e
 nessuno start command.
 
 ### Le reti private vecchie
@@ -100,16 +100,16 @@ Tutte facoltative. Senza nessuna, la pagina è in italiano e ha l'aspetto del fr
 
 | Variabile | Esempio | Cosa fa |
 |---|---|---|
-| `MAINTENANCE_TITLE` | `Aggiornamento del portale` | Il titolo. Di base «Torniamo tra poco». Al massimo 150 caratteri. |
+| `MAINTENANCE_TITLE` | `Aggiornamento del portale` | Il titolo. Di base «Ci dispiace, il servizio non è disponibile» in manutenzione e «Ci dispiace, c'è un problema con il servizio» quando il servizio non risponde. Al massimo 150 caratteri. |
 | `MAINTENANCE_MESSAGE` | `Stiamo installando la nuova versione.` | Il testo sotto il titolo. Una riga vuota inizia un paragrafo nuovo, un a capo va a capo. Al massimo 2000 caratteri. Vale anche per il JSON. |
-| `MAINTENANCE_UNTIL` | `2026-10-22T18:00`, `2026-10-22 18:00`, `18:00` | Quando pensi di tornare online. Compare come «Ritorno previsto: giovedì 22 ottobre, alle 18:00» (l'anno solo se non è quello in corso). L'ora è scritta così com'è, senza fusi orari. Senza questa variabile la pagina non parla di orari. |
-| `MAINTENANCE_BRAND` | `Regione Esempio` | Il nome del servizio o del cliente, in alto e nel titolo della scheda del browser. |
-| `MAINTENANCE_LOGO_URL` | `https://cliente.it/logo.svg` | Il logo, accanto al nome. Solo `https://`. È l'unica cosa che la pagina carica da fuori: se non si carica, sparisce senza lasciare un'immagine rotta. |
-| `MAINTENANCE_COLOR` | `#0b6e4f` | Il colore principale (il bottone **Riprova**), in chiaro e in scuro, solo esadecimale (`#0b6e4f` o `#0b6`). Il testo sopra e il bordo li sceglie lo script, in modo che il contrasto resti almeno AA con qualunque colore. Senza, quello del tema (vedi «Lo stile»). |
-| `MAINTENANCE_CONTACT_EMAIL` | `assistenza@cliente.it` | Un bottone per scrivere. |
-| `MAINTENANCE_CONTACT_PHONE` | `+39 06 1234 5678` | Un bottone per chiamare (sul telefono apre la chiamata). |
-| `MAINTENANCE_CONTACT_URL` | `https://stato.cliente.it` | Un bottone verso una pagina (stato del servizio, assistenza). Solo `https://`. |
-| `MAINTENANCE_CONTACT_URL_LABEL` | `Stato del servizio` | Il testo di quel bottone. Di base «Altre informazioni». Senza `MAINTENANCE_CONTACT_URL` fa rifiutare l'avvio. |
+| `MAINTENANCE_UNTIL` | `2026-10-22T18:00`, `2026-10-22 18:00`, `18:00` | Quando pensi di tornare online. Compare come «Ritorno previsto **giovedì 22 ottobre, alle 18:00**» (l'anno solo se non è quello in corso). L'ora è scritta così com'è, senza fusi orari. Con questa variabile, in manutenzione, il primo punto dell'elenco diventa «riprova dopo l'orario previsto». Senza, la pagina non parla di orari. |
+| `MAINTENANCE_BRAND` | `Regione Esempio` | Il nome del servizio o del cliente, nella fascia in alto e nel titolo della scheda del browser. |
+| `MAINTENANCE_LOGO_URL` | `https://cliente.it/logo.svg` | Il logo, nella fascia in alto, accanto al nome. Solo `https://`. È l'unica cosa che la pagina carica da fuori: se non si carica, sparisce senza lasciare un'immagine rotta. |
+| `MAINTENANCE_COLOR` | `#0b6e4f` | Il colore principale (la riga sotto la fascia in alto, il bottone **Riprova**, i link), in chiaro e in scuro, solo esadecimale (`#0b6e4f` o `#0b6`). Il testo sopra, il bordo e il colore dei link li sceglie lo script, in modo che il contrasto resti almeno AA con qualunque colore. Senza, quello del tema (vedi «Lo stile»). |
+| `MAINTENANCE_CONTACT_EMAIL` | `assistenza@cliente.it` | Nell'elenco «Cosa puoi fare»: «se ti serve aiuto, scrivi a …» (in manutenzione) o «se il problema continua, scrivi a …» (servizio non raggiungibile). |
+| `MAINTENANCE_CONTACT_PHONE` | `+39 06 1234 5678` | Nella stessa voce dell'email: «chiama il …» (sul telefono apre la chiamata); con tutti e due, «scrivi a … o chiama il …». |
+| `MAINTENANCE_CONTACT_URL` | `https://stato.cliente.it` | Un link verso una pagina (stato del servizio, assistenza), come ultima voce dell'elenco. Solo `https://`. |
+| `MAINTENANCE_CONTACT_URL_LABEL` | `Stato del servizio` | Il testo di quel link. Di base «Altre informazioni». Senza `MAINTENANCE_CONTACT_URL` fa rifiutare l'avvio. |
 | `MAINTENANCE_LANG` | `en` | La lingua della pagina e del JSON: `it` (di base) o `en`. |
 | `MAINTENANCE_HTML` | `<!doctype html>...` | Una pagina intera tua, servita così com'è: se c'è, vince su tutte le variabili sopra. |
 | `MAINTENANCE_JSON` | `{"message":"Torniamo alle 18"}` | Il corpo intero per chi chiede JSON (un percorso sotto `/api/`, o un `Accept` con `application/json`). Di base `{"message":"..."}`, con `MAINTENANCE_MESSAGE` se impostata e `"until"` se c'è `MAINTENANCE_UNTIL`. |
@@ -125,10 +125,13 @@ caratteri alla lettera.
 
 ### Lo stile
 
-La pagina è disegnata come una schermata del frontend del template: la stessa della pagina «404» e della
-login (una colonna al centro sullo sfondo della pagina, senza card), con gli stessi colori, raggi, bottoni,
-badge e caratteri. Tutto lo stile parte da un blocco unico di variabili CSS in cima a `page.html`, con gli
-stessi nomi del frontend (`--color-primary`, `--color-background`, `--radius`, `--font-sans`...).
+La pagina segue lo stile delle pagine d'errore dei servizi pubblici («Sorry, the service is unavailable» di
+GOV.UK, l'intestazione di Designers Italia / Bootstrap Italia): una fascia in alto con il nome e una riga del
+colore principale, poi una colonna allineata a sinistra con lo stato, un titolo netto, il testo, l'elenco
+«Cosa puoi fare» e il bottone **Riprova**; in fondo il codice dell'errore. Colori, raggi e caratteri sono
+quelli del frontend del template: tutto lo stile parte da un blocco unico di variabili CSS in cima a
+`page.html`, con gli stessi nomi del frontend (`--color-primary`, `--color-background`, `--radius`,
+`--font-sans`...).
 
 Un progetto con un frontend diverso dal template la allinea al suo con queste variabili, tutte facoltative:
 quelle non impostate restano quelle del tema.
@@ -146,10 +149,9 @@ quelle non impostate restano quelle del tema.
 
 I colori sono solo esadecimali. Con uno sfondo o un testo propri, lo script controlla che il testo sullo
 sfondo arrivi almeno a **4,5:1** (AA): se non ci arriva **rifiuta l'avvio** e dice di quanto è, per quale
-tema. Il testo secondario, le linee, il bordo dei bottoni e il colore al passaggio del mouse li ricava lui
-dai due colori, ognuno il più vicino possibile allo sfondo che rispetti comunque il suo minimo. Le
-etichette di stato (gialla per la manutenzione, rossa per il servizio non raggiungibile) restano quelle del
-tema: hanno uno sfondo loro. Non c'è un modo di passare CSS libero: solo questi valori, controllati.
+tema. Il testo secondario e le linee li ricava lui dai due colori, ognuno il più vicino possibile allo sfondo
+che rispetti comunque il suo minimo. I colori del segno di stato (giallo per la manutenzione, rosso per il
+servizio non raggiungibile) restano quelli del tema: hanno uno sfondo loro. Non c'è un modo di passare CSS libero: solo questi valori, controllati.
 
 Per esempio, un frontend con il tema PA e angoli più tondi:
 
@@ -172,15 +174,20 @@ MAINTENANCE_FONT=serif
 
 ### Cosa fa la pagina
 
-- Il titolo, il testo, l'orario previsto se c'è, il bottone **Riprova** e i bottoni dei contatti.
-- Un'etichetta in alto dice «Manutenzione in corso» (gialla) quando è accesa, «Servizio non raggiungibile»
-  (rossa) quando la pagina è comparsa da sola perché l'app è giù. Anche il testo di base cambia; `MAINTENANCE_MESSAGE` vale
-  per entrambi i casi.
+- La fascia con il logo e il nome (senza, solo la riga colorata), il titolo, il testo, l'orario previsto
+  se c'è, l'elenco «Cosa puoi fare» e il bottone **Riprova**.
+- L'elenco ha solo le voci per cui c'è un'informazione: «riprova più tardi» (o «riprova dopo l'orario
+  previsto», o «riprova tra qualche minuto» se il servizio non risponde) sempre, poi i contatti se ci sono.
+- Sopra il titolo, lo stato: «Manutenzione in corso» con una chiave inglese su fondo giallo quando è
+  accesa, «Servizio non raggiungibile» con un punto esclamativo su fondo rosso quando la pagina è comparsa
+  da sola perché l'app è giù. Cambiano anche il titolo di base («c'è un problema con il servizio»), il
+  testo di base e la voce dei contatti («se il problema continua»); `MAINTENANCE_TITLE` e
+  `MAINTENANCE_MESSAGE` valgono per entrambi i casi.
 - Mentre è aperta, ogni tanto (dopo 10 secondi, poi sempre più di rado fino a un minuto, mai con la
   scheda nascosta) richiede lo stesso indirizzo: quando la risposta non ha più `X-Gateway: maintenance`,
   il servizio è tornato e la pagina si ricarica da sola.
 - Tema chiaro e scuro secondo il sistema, pensata per il telefono, focus visibile, contrasto misurato
-  almeno AA (le prove lo calcolano), animazioni ferme con «riduci movimento». Nessun font o script
+  almeno AA (le prove lo calcolano), niente che si muova (e «riduci movimento» rispettato). Nessun font o script
   esterno: è tutto dentro la pagina.
 
 ## Accendere e spegnere
@@ -190,12 +197,12 @@ funziona da qualunque cartella:
 
 ```bash
 # dalla cartella di un progetto collegato a Railway (railway link)
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 status
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 on
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 off
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 status
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 on
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 off
 
 # da qualunque altra cartella, nominando progetto e ambiente
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 on --project <id o nome> --environment production --service gateway
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 on --project <id o nome> --environment production --service gateway
 
 # oppure da una copia di questa repo
 node bin/maintenance.mjs status --project <id> --environment production
@@ -212,10 +219,10 @@ Non serve accendere la manutenzione quando l'app è giù: la pagina compare da s
 
 ## Aggiornare la versione in un progetto
 
-L'immagine è sempre nominata con la versione esatta (`ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0`): un progetto non
+L'immagine è sempre nominata con la versione esatta (`ghcr.io/mbs-francesco-la-ruffa/gateway:1.2.0`): un progetto non
 cambia mai senza che qualcuno lo decida. Per passare a una versione nuova:
 
-- dalla dashboard: Settings → Source → l'immagine → `ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0`, poi **Deploy**;
+- dalla dashboard: Settings → Source → l'immagine → `ghcr.io/mbs-francesco-la-ruffa/gateway:1.2.0`, poi **Deploy**;
 - nel template: la costante `GATEWAY_IMAGE` in `.railway/railway.ts`, poi `pnpm railway:plan` e
   `pnpm railway:apply`; insieme si aggiorna la versione del comando nello script `maintenance` di
   `package.json`.
@@ -227,13 +234,13 @@ un'immagine da solo: conviene la versione esatta.
 
 1. Cambia quello che serve e lancia le prove: `bash tests/check.sh && bash tests/check-command.sh`
    (servono docker, curl, jq, python3 e node; circa due minuti).
-2. Aggiorna `version` in `package.json` (`1.1.0`), poi commit e push su `main`.
+2. Aggiorna `version` in `package.json` (`1.2.0`), poi commit e push su `main`.
 3. Crea e spingi il tag con la stessa versione:
    ```bash
-   git tag v1.1.0
-   git push origin v1.1.0
+   git tag v1.2.0
+   git push origin v1.2.0
    ```
-4. GitHub Actions rifà le prove e pubblica `ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0`, `:1.1` e `:1` (amd64 e arm64).
+4. GitHub Actions rifà le prove e pubblica `ghcr.io/mbs-francesco-la-ruffa/gateway:1.2.0`, `:1.2` e `:1` (amd64 e arm64).
    Se il tag e `package.json` non coincidono, si ferma.
 
 Le versioni seguono semver: una correzione è `1.0.1`, una variabile nuova `1.1.0`, qualcosa che cambia il
@@ -256,10 +263,10 @@ Se viene trasferita (per esempio a MbsSrl), il workflow pubblica da solo sotto i
 nei progetti che lo usano vanno cambiati il nome dell'immagine (`ghcr.io/<nuovo proprietario>/gateway`) e
 il comando (`github:<nuovo proprietario>/gateway`), e il nuovo pacchetto va reso pubblico come sopra.
 
-Prova: `docker pull ghcr.io/mbs-francesco-la-ruffa/gateway:1.1.0` da un computer senza `docker login` a ghcr.io.
+Prova: `docker pull ghcr.io/mbs-francesco-la-ruffa/gateway:1.2.0` da un computer senza `docker login` a ghcr.io.
 
 Il comando (`npx github:mbs-francesco-la-ruffa/gateway`) legge invece la repo: se la repo è privata funziona solo per chi
-ha accesso con le proprie credenziali git; in quel caso usa `git+ssh://git@github.com/mbs-francesco-la-ruffa/gateway.git#v1.1.0`.
+ha accesso con le proprie credenziali git; in quel caso usa `git+ssh://git@github.com/mbs-francesco-la-ruffa/gateway.git#v1.2.0`.
 
 ## Fuori da Railway
 
@@ -285,13 +292,13 @@ Con il file presente valgono la stessa pagina «Manutenzione in corso» e gli st
 
 ```bash
 # il container è sulla tua macchina
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 on  --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 on  --docker gateway-gateway-1
 # il container è su un server raggiungibile in ssh
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 on  --ssh deploy@server.cliente.it --docker gateway-gateway-1
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 off --ssh deploy@server.cliente.it --docker gateway-gateway-1
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 status --ssh deploy@server.cliente.it --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 on  --ssh deploy@server.cliente.it --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 off --ssh deploy@server.cliente.it --docker gateway-gateway-1
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 status --ssh deploy@server.cliente.it --docker gateway-gateway-1
 # senza docker exec: il file nel volume, come lo vede il server
-npx github:mbs-francesco-la-ruffa/gateway#v1.1.0 on  --ssh deploy@server.cliente.it --path /srv/gateway/data/maintenance.on
+npx github:mbs-francesco-la-ruffa/gateway#v1.2.0 on  --ssh deploy@server.cliente.it --path /srv/gateway/data/maintenance.on
 ```
 
 `--docker` è il nome del container (`docker compose ps`); `--path` serve solo se hai cambiato
@@ -372,7 +379,7 @@ HTML e virgolette, in inglese, con orari diversi, con colori difficili (contrast
 scuro), con il tema `pa`, con sfondo, testo, raggio e caratteri propri e coppie di colori al limite; nessun
 colore, misura o carattere scritto fuori dal blocco delle variabili; ogni valore sbagliato rifiutato. Poi apre le pagine in Chromium (immagine Playwright): il
 controllo periodico che ricarica quando il servizio torna, nessun controllo con la scheda nascosta, il
-focus, il telefono a 320 px, il movimento ridotto, il tema. Tutto si cancella alla fine, anche con Ctrl-C.
+focus, il telefono a 320 px, la colonna allineata a sinistra con la fascia in alto, il tema. Tutto si cancella alla fine, anche con Ctrl-C.
 
 `CHECK_GATEWAY_SCRIPT=<copia>` e `CHECK_GATEWAY_PAGE=<copia>` montano una copia rotta apposta al posto
 dei file dell'immagine: così si dimostra che una prova sa fallire, senza toccare i file veri.
